@@ -13,11 +13,13 @@ internal class Arguments{
         {"force", 0},
     };
 
-    public UnicastAddress PhysicalAddress { get; }
-    public string Interface { get; }
-    public string Path1 { get; }
-    public string Path2 { get; }
-    public string Command { get; }
+    public UnicastAddress? PhysicalAddress { get; } = null;
+    public string Interface { get; } = "";
+    public string Path1 { get; } = "";
+    public string Path2 { get; } = "";
+    public string Command { get; } = "";
+
+    public Arguments() { }
 
     public Arguments(string[] args, bool isOpen = false)
     {
@@ -30,7 +32,7 @@ internal class Arguments{
             return;
         }
 
-        if(Command == "close")
+        if(Command == "close" || Command == "help")
             return;
 
         if(isOpen)

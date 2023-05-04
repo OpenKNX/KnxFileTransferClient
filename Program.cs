@@ -24,12 +24,14 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
+        Console.ForegroundColor = ConsoleColor.Green;
         var version = typeof(Program).Assembly.GetName().Version;
         var versionString = "";
         if (version != null) 
             versionString = string.Format(" {0}.{1}.{2}", version.Major, version.Minor, version.Build);
         Console.WriteLine("Willkommen zum KnxFtpClient{0}!!", versionString);
         Console.WriteLine();
+        Console.ResetColor();
 
         if(args.Length == 0 || args[0] == "help")
             return help();
@@ -61,6 +63,9 @@ class Program
 
                 switch(arguments.Command)
                 {
+                    case "help":
+                        code = help();
+                        break;
                     case "format":
                         code = await format(arguments);
                         break;
@@ -124,8 +129,15 @@ class Program
 
     private static int help()
     {
+        Arguments args = new Arguments();
         Console.WriteLine();
-        Console.WriteLine("KnxFtpClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port=3671 --delay=0 --pkg=228 --errors=3)");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"KnxFtpClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
+        Console.ResetColor();
+        Console.WriteLine($"In Session:");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"<Command> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
+        Console.ResetColor();
         Console.WriteLine();
         Console.WriteLine("Command:         Command to execute");
         Console.WriteLine("                 format/exists/rename/upload/download/list/mkdir/rmdir/open/close");
@@ -133,16 +145,18 @@ class Program
         Console.WriteLine("PhysicalAddress: Address of the KNX-Device (1.2.120)");
         Console.WriteLine("Source*:         Path to the file on the host");
         Console.WriteLine("Target**:        Path to the file on the knx device");
-        Console.WriteLine("Port:            Optional - Port of the KNX-IP-interface (3671)");
-        Console.WriteLine("Delay:           Optional - Delay after each telegram (0 ms)");
-        Console.WriteLine("Package (pkg):   Optional - data size to transfer in one telegram (128 bytes)");
-        Console.WriteLine("Errors:          Optional - Max count of errors before abort update");
+        Console.WriteLine($"Port:            Optional - Port of the KNX-IP-interface ({args.Get("port")})");
+        Console.WriteLine($"Delay:           Optional - Delay after each telegram ({args.Get("delay")} ms)");
+        Console.WriteLine($"Package (pkg):   Optional - data size to transfer in one telegram ({args.Get("pkg")} bytes)");
+        Console.WriteLine($"Errors:          Optional - Max count of errors before abort update ({args.Get("errors")})");
         Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("*  only at command upload/download");
         Console.WriteLine("** only at command exists/rename/upload/download/list/mkdir/rmdir");
         Console.WriteLine();
         Console.WriteLine("Open  = Session Start");
         Console.WriteLine("Close = Session End");
+        Console.ResetColor();
         return 0;
     }
 

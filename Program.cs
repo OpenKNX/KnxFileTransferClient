@@ -177,7 +177,7 @@ class Program
     private static async Task<int> exists(Arguments args)
     {
         Console.WriteLine("Info:  Exists - " + args.Path1);
-        byte[] buffer = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
+        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Exists, buffer, true);
 
         if(res.Data[0] == 0x00)
@@ -196,8 +196,8 @@ class Program
     {
         Console.WriteLine("Info:  Umbenennen - " + args.Path1 + " in " + args.Path2);
         List<byte> data = new List<byte>();
-        data.AddRange(ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue));
-        data.AddRange(ASCIIEncoding.ASCII.GetBytes(args.Path2 + char.MinValue));
+        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue));
+        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Exists, data.ToArray(), true);
 
         if(res.Data[0] == 0x00)
@@ -216,7 +216,7 @@ class Program
         List<byte> data = new List<byte>();
         data.AddRange(BitConverter.GetBytes(sequence));
         data.Add((byte)(args.Get("pkg")));
-        data.AddRange(ASCIIEncoding.ASCII.GetBytes(args.Path2 + char.MinValue));
+        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileUpload, data.ToArray(), true);
         sequence++;
 
@@ -246,7 +246,7 @@ class Program
         List<byte> data = new List<byte>();
         data.AddRange(BitConverter.GetBytes(sequence));
         data.Add((byte)(args.Get("pkg")));
-        data.AddRange(ASCIIEncoding.ASCII.GetBytes(args.Path2 + char.MinValue));
+        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileDownload, data.ToArray(), true);
         sequence++;
 
@@ -285,7 +285,7 @@ class Program
     private static async Task<int> list(Arguments args)
     {
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
-        byte[] data = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
+        byte[] data = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirList, data, true);
 
         while(true)
@@ -300,11 +300,11 @@ class Program
                     return 0;
                     
                 case 0x01:
-                    Console.WriteLine("        - Datei  " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
+                    Console.WriteLine("        - Datei  " + UTF8Encoding.UTF8.GetString(res.Data.Skip(2).ToArray()));
                     break;
                     
                 case 0x02:
-                    Console.WriteLine("        - Ordner " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
+                    Console.WriteLine("        - Ordner " + UTF8Encoding.UTF8.GetString(res.Data.Skip(2).ToArray()));
                     break;
             }
 
@@ -316,7 +316,7 @@ class Program
     private static async Task<int> mkdir(Arguments args)
     {
         Console.WriteLine("Info:  Ordner erstellen - " + args.Path1);
-        byte[] buffer = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
+        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirCreate, buffer, true);
 
         if(res.Data[0] == 0x00)
@@ -331,7 +331,7 @@ class Program
     private static async Task<int> rmdir(Arguments args)
     {
         Console.WriteLine("Info:  Ordner löschen - " + args.Path1);
-        byte[] buffer = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
+        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirDelete, buffer, true);
 
         if(res.Data[0] == 0x00)

@@ -44,11 +44,11 @@ class Program
 
         try
         {
-            //conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get("port"));
-            //await conn.Connect();
+            conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get("port"));
+            await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
-            //device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
-            //await device.Connect();
+            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
+            await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {args[1]} hergestellt");
 
             bool isOpen = false;
@@ -56,9 +56,11 @@ class Program
             {
                 if(isOpen)
                 {
+                    await device.Disconnect();
                     Console.WriteLine("Info:  Neuen Befehl eingeben:");
                     string[] args2 = Console.ReadLine().Split(" ");
                     arguments = new Arguments(args2, true);
+                    await device.Connect();
                 }
 
                 switch(arguments.Command)
@@ -198,7 +200,7 @@ class Program
         List<byte> data = new List<byte>();
         data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue));
         data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Exists, data.ToArray(), true);
+        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Rename, data.ToArray(), true);
 
         if(res.Data[0] == 0x00)
         {
@@ -285,7 +287,7 @@ class Program
     private static async Task<int> list(Arguments args)
     {
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
-        byte[] data = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
+        byte[] data = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
         MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirList, data, true);
 
         while(true)
@@ -300,11 +302,11 @@ class Program
                     return 0;
                     
                 case 0x01:
-                    Console.WriteLine("        - Datei  " + UTF8Encoding.UTF8.GetString(res.Data.Skip(2).ToArray()));
+                    Console.WriteLine("        - Datei  " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
                     break;
                     
                 case 0x02:
-                    Console.WriteLine("        - Ordner " + UTF8Encoding.UTF8.GetString(res.Data.Skip(2).ToArray()));
+                    Console.WriteLine("        - Ordner " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
                     break;
             }
 

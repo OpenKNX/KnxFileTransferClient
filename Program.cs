@@ -73,6 +73,9 @@ class Program
                     case "download":
                         await download(arguments);
                         break;
+                    case "delete":
+                        await delete(arguments);
+                        break;
                     case "list":
                         await list(arguments);
                         break;
@@ -185,6 +188,13 @@ class Program
         Console.WriteLine("Info:  Datei runterladen - in " + args.Path1 + " von " + args.Path2);
         await client.FileUpload(args.Path1, args.Path2, args.Get("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
+    }
+
+    private static async Task delete(Arguments args)
+    {
+        Console.WriteLine("Info:  Datei löschen - " + args.Path1);
+        await client.FileDelete(args.Path1);
+        Console.WriteLine("Info:  Datei erfolgreich gelöscht");
     }
 
     private static async Task list(Arguments args)

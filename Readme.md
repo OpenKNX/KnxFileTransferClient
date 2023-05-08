@@ -39,7 +39,7 @@ Will show you the arguments and its definition.
 |Package (pkg)|Optional - data size to transfer in one telegram (128 bytes)|
 |Errors|Optional - Max count of errors before abort update|
 
->\*  only at command upload/download  
+>\*  only at command upload/download/delete  
 >** only at command exists/rename/upload/download/list/mkdir/rmdir
 
 
@@ -50,6 +50,7 @@ Will show you the arguments and its definition.
 |rename|Rename a file/dir|
 |upload|Upload a file|
 |download|Download a file|
+|delete|Delete a file|
 |list|List dir content|
 |mkdir|Create dir|
 |rmdir|Delete dir|

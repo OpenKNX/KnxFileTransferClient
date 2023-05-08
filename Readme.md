@@ -39,7 +39,7 @@ Will show you the arguments and its definition.
 |Package (pkg)|Optional - data size to transfer in one telegram (128 bytes)|
 |Errors|Optional - Max count of errors before abort update|
 
->\*  only at command upload/download
+>\*  only at command upload/download  
 >** only at command exists/rename/upload/download/list/mkdir/rmdir
 
 
@@ -58,5 +58,5 @@ Will show you the arguments and its definition.
 
 You can start a session where you can set multiple commands manually so you don't have to reconnect each time.  
 
->Open  = Session Start
+>Open  = Session Start  
 >Close = Session End

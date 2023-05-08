@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using Kaenx.Konnect.Messages.Response;
+using KnxFtpClient.Lib;
 
 namespace KnxFtpClient;
 
@@ -8,19 +9,7 @@ class Program
 {    
     private static Kaenx.Konnect.Connections.KnxIpTunneling? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
-
-    private enum FtpCommands
-    {
-        Format,
-        Exists,
-        Rename,
-        FileUpload = 40,
-        FileDownload,
-        FileDelete,
-        DirList = 80,
-        DirCreate,
-        DirDelete
-    }
+    private static FtpClient? client = null;
 
     static async Task<int> Main(string[] args)
     {
@@ -50,6 +39,7 @@ class Program
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {args[1]} hergestellt");
+            client = new FtpClient(device);
 
             bool isOpen = false;
             do
@@ -69,28 +59,28 @@ class Program
                         code = help();
                         break;
                     case "format":
-                        code = await format(arguments);
+                        await format(arguments);
                         break;
                     case "exists":
-                        code = await exists(arguments);
+                        await exists(arguments);
                         break;
                     case "rename":
-                        code = await rename(arguments);
+                        await rename(arguments);
                         break;
                     case "upload":
-                        code = await upload(arguments);
+                        await upload(arguments);
                         break;
                     case "download":
-                        code = await download(arguments);
+                        await download(arguments);
                         break;
                     case "list":
-                        code = await list(arguments);
+                        await list(arguments);
                         break;
                     case "mkdir":
-                        code = await mkdir(arguments);
+                        await mkdir(arguments);
                         break;
                     case "rmdir":
-                        code = await rmdir(arguments);
+                        await rmdir(arguments);
                         break;
                     case "open":
                     {
@@ -162,186 +152,60 @@ class Program
         return 0;
     }
 
-    private static async Task<int> format(Arguments args)
+    private static async Task format(Arguments args)
     {
         Console.WriteLine("Info:  Dateisystem wird formatiert");
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Format, null, true);
-
-        if(res.Data[0] == 0x00)
-        {
-            Console.WriteLine("Info:  Dateisystem wurde erfolgreich formatiert");
-            return 0;
-        }
-        
-        throw new FtpException(res.Data[0]);
+        await client.Format();
+        Console.WriteLine("Info:  Dateisystem erfolgreich formatiert");
     }
     
-    private static async Task<int> exists(Arguments args)
+    private static async Task exists(Arguments args)
     {
         Console.WriteLine("Info:  Exists - " + args.Path1);
-        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Exists, buffer, true);
-
-        if(res.Data[0] == 0x00)
-        {
-            if(res.Data[1] == 0x00)
-                Console.WriteLine("Info:  Existiert nicht");
-            else
-                Console.WriteLine("Info:  Existiert");
-            return 0;
-        }
-        
-        throw new FtpException(res.Data[0]);
+        bool exists = await client.Exists(args.Path1);
+        Console.WriteLine("Info:  Existiert" + (exists ? "":" nicht"));
     }
 
-    private static async Task<int> rename(Arguments args)
+    private static async Task rename(Arguments args)
     {
         Console.WriteLine("Info:  Umbenennen - " + args.Path1 + " in " + args.Path2);
-        List<byte> data = new List<byte>();
-        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue));
-        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.Rename, data.ToArray(), true);
-
-        if(res.Data[0] == 0x00)
-        {
-            Console.WriteLine("Info:  Umbenennen erfolgreich");
-            return 0;
-        }
-        
-        throw new FtpException(res.Data[0]);
+        await client.Rename(args.Path1, args.Path2);
+        Console.WriteLine("Info:  Umbenennen erfolgreich");
     }
 
-    private static async Task<int> upload(Arguments args)
+    private static async Task upload(Arguments args)
     {
-        short sequence = 0;
-        Console.WriteLine("Info:  Datei runterladen - " + args.Path1 + " in " + args.Path2);
-        List<byte> data = new List<byte>();
-        data.AddRange(BitConverter.GetBytes(sequence));
-        data.Add((byte)(args.Get("pkg")));
-        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileUpload, data.ToArray(), true);
-        sequence++;
-
-        FileStream file = File.Open(args.Path1, FileMode.Open);
-
-        while(true)
-        {
-            if(res.Data[0] != 0x00)
-                throw new FtpException(res.Data[0]);
-
-            byte[] buffer = new byte[args.Get("pkg") - 5];
-            int readed = file.Read(buffer, 0, args.Get("pkg") - 5);
-
-            data.Clear();
-            data.AddRange(BitConverter.GetBytes(sequence));
-            data.AddRange(buffer);
-
-            res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileDownload, data.ToArray(), true);
-            sequence++;
-        }
+        Console.WriteLine("Info:  Datei hochladen - von " + args.Path1 + " in " + args.Path2);
+        await client.FileUpload(args.Path1, args.Path2, args.Get("pkg"));
+        Console.WriteLine("Info:  Datei hochladen abgeschlossen");
     }
 
-    private static async Task<int> download(Arguments args)
+    private static async Task download(Arguments args)
     {
-        short sequence = 0;
         Console.WriteLine("Info:  Datei runterladen - in " + args.Path1 + " von " + args.Path2);
-        List<byte> data = new List<byte>();
-        data.AddRange(BitConverter.GetBytes(sequence));
-        data.Add((byte)(args.Get("pkg")));
-        data.AddRange(UTF8Encoding.UTF8.GetBytes(args.Path2 + char.MinValue));
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileDownload, data.ToArray(), true);
-        sequence++;
-
-        FileStream file = File.Open(args.Path1, FileMode.OpenOrCreate);
-
-
-        while(true)
-        {
-            if(res.Data[0] != 0x00)
-                throw new FtpException(res.Data[0]);
-
-            /*if(res.Data.Length - 5 == 0)
-            {
-                file.Flush();
-                file.Close();
-                file.Dispose();
-                return 0;
-            }*/
-
-            file.Write(res.Data, 3, res.Data.Length - 5);
-
-            if(res.Data.Length - 5 < args.Get("pkg"))
-            {
-                file.Flush();
-                file.Close();
-                file.Dispose();
-                return 0;
-            }
-
-
-            res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.FileDownload, BitConverter.GetBytes(sequence), true);
-            sequence++;
-        }
+        await client.FileUpload(args.Path1, args.Path2, args.Get("pkg"));
+        Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
-    private static async Task<int> list(Arguments args)
+    private static async Task list(Arguments args)
     {
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
-        byte[] data = ASCIIEncoding.ASCII.GetBytes(args.Path1 + char.MinValue);
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirList, data, true);
-
-        while(true)
-        {
-            if(res.Data[0] != 0x00)
-                throw new FtpException(res.Data[0]);
-
-            switch(res.Data[1])
-            {
-                case 0x00:
-                    Console.WriteLine("       Keine weiteren Einträge");
-                    return 0;
-                    
-                case 0x01:
-                    Console.WriteLine("        - Datei  " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
-                    break;
-                    
-                case 0x02:
-                    Console.WriteLine("        - Ordner " + ASCIIEncoding.ASCII.GetString(res.Data.Skip(2).ToArray()));
-                    break;
-            }
-
-            
-            res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirList, null, true);
-        }
+        List<FtpPath> list = await client.List(args.Path1);
+        foreach(FtpPath path in list)
+            Console.WriteLine($"        - {(path.IsFile ? "Datei ":"Ordner")} {path.Name}");
     }
     
-    private static async Task<int> mkdir(Arguments args)
+    private static async Task mkdir(Arguments args)
     {
         Console.WriteLine("Info:  Ordner erstellen - " + args.Path1);
-        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirCreate, buffer, true);
-
-        if(res.Data[0] == 0x00)
-        {
-            Console.WriteLine("Info:  Ordner erfolgreich erstellt");
-            return 0;
-        }
-        
-        throw new FtpException(res.Data[0]);
+        await client.DirCreate(args.Path1);
+        Console.WriteLine("Info:  Ordner erfolgreich erstellt");
     }
     
-    private static async Task<int> rmdir(Arguments args)
+    private static async Task rmdir(Arguments args)
     {
         Console.WriteLine("Info:  Ordner löschen - " + args.Path1);
-        byte[] buffer = UTF8Encoding.UTF8.GetBytes(args.Path1 + char.MinValue);
-        MsgFunctionPropertyStateRes res = await device.InvokeFunctionProperty(159, (byte)FtpCommands.DirDelete, buffer, true);
-
-        if(res.Data[0] == 0x00)
-        {
-            Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
-            return 0;
-        }
-        
-        throw new FtpException(res.Data[0]);
+        await client.DirDelete(args.Path1);
+        Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
     }
 }

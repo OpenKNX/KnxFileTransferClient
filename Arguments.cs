@@ -11,6 +11,7 @@ internal class Arguments{
         {"pkg", 128},
         {"errors", 3},
         {"force", 0},
+        {"routing", 0},
     };
 
     public UnicastAddress? PhysicalAddress { get; } = null;
@@ -24,30 +25,7 @@ internal class Arguments{
     public Arguments(string[] args, bool isOpen = false)
     {
         Command = args[0];
-
-        if(Command == "open")
-        {
-            Interface = args[1];
-            PhysicalAddress = UnicastAddress.FromString(args[2]);
-            return;
-        }
-
-        if(Command == "close" || Command == "help")
-            return;
-
-        if(isOpen)
-        {
-            Path1 = args[1];
-            if(args.Length > 2 && !args[2].StartsWith("--"))
-                Path2 = args[2];
-        } else {
-            Interface = args[1];
-            PhysicalAddress = UnicastAddress.FromString(args[2]);
-            Path1 = args[3];
-            if(args.Length > 4 && !args[4].StartsWith("--"))
-                Path2 = args[4];
-        }
-
+        
         foreach (string arg in args.Where(a => a.StartsWith("--")))
         {
             string[] sp = arg.Split("=");
@@ -62,6 +40,59 @@ internal class Arguments{
                     throw new Exception("Unbekanntes Argument: " + name);
                     
                 arguments[name] = int.Parse(sp[1]);
+            }
+        }
+
+        if(Command == "open")
+        {
+            if(arguments["routing"] == 1)
+            {
+                if(args[1].Split(".").Length == 4)
+                {
+                    Interface = args[1];
+                    PhysicalAddress = UnicastAddress.FromString(args[2]);
+                } else {
+                    Interface = "224.0.23.12";
+                    PhysicalAddress = UnicastAddress.FromString(args[1]);
+                }
+            } else {
+                Interface = args[1];
+                PhysicalAddress = UnicastAddress.FromString(args[2]);
+            }
+            return;
+        }
+
+        if(Command == "close" || Command == "help")
+            return;
+
+        if(isOpen)
+        {
+            Path1 = args[1];
+            if(args.Length > 2 && !args[2].StartsWith("--"))
+                Path2 = args[2];
+        } else {
+            if(arguments["routing"] == 1)
+            {
+                if(args[1].Split(".").Length == 4)
+                {
+                    Interface = args[1];
+                    PhysicalAddress = UnicastAddress.FromString(args[2]);
+                    Path1 = args[3];
+                    if(args.Length > 4 && !args[4].StartsWith("--"))
+                        Path2 = args[4];
+                } else {
+                    Interface = "224.0.23.12";
+                    PhysicalAddress = UnicastAddress.FromString(args[1]);
+                    Path1 = args[2];
+                    if(args.Length > 4 && !args[3].StartsWith("--"))
+                        Path2 = args[3];
+                }
+            } else {
+                Interface = args[1];
+                PhysicalAddress = UnicastAddress.FromString(args[2]);
+                Path1 = args[3];
+                if(args.Length > 4 && !args[4].StartsWith("--"))
+                    Path2 = args[4];
             }
         }
     }

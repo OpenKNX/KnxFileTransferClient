@@ -7,7 +7,7 @@ namespace KnxFileTransferClient;
 
 class Program
 {    
-    private static Kaenx.Konnect.Connections.KnxIpTunneling? conn = null;
+    private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
     private static FileTransferClient? client = null;
 
@@ -31,7 +31,11 @@ class Program
 
         try
         {
-            conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get("port"));
+            if(arguments.Get("routing") != 0)
+                conn = new Kaenx.Konnect.Connections.KnxIpRouting(arguments.Interface, arguments.Get("port"));
+            else
+                conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get("port"));
+
             await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
@@ -99,6 +103,13 @@ class Program
                         isOpen = false;
                         break;
                     }
+                    default:
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Unbekanntes Kommando: " + arguments.Command);
+                        Console.ResetColor();
+                        break;
+                    }
                 }
             } while(isOpen);
         } catch(FileTransferException ex)
@@ -129,11 +140,12 @@ class Program
         Arguments args = new Arguments();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"KnxFileTransferClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
+        Console.WriteLine($"KnxFileTransferClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?>");
+        Console.WriteLine($"                (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")} --routing)");
         Console.ResetColor();
         Console.WriteLine($"In Session:");
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"<Command> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
+        Console.WriteLine($"<Command> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")} --routing)");
         Console.ResetColor();
         Console.WriteLine();
         Console.WriteLine("Command:         Command to execute");

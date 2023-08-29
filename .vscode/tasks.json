@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/KnxFtpClient.csproj",
+                "${workspaceFolder}/KnxFileTransferClient.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -27,7 +27,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/KnxFtpClient.csproj",
+                "${workspaceFolder}/KnxFileTransferClient.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -41,7 +41,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/KnxFtpClient.csproj"
+                "${workspaceFolder}/KnxFileTransferClient.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

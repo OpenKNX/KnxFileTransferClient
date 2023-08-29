@@ -1,7 +1,7 @@
 using System.Net;
 using Kaenx.Konnect.Addresses;
 
-namespace KnxFtpClient;
+namespace KnxFileTransferClient;
 
 internal class Arguments{
     

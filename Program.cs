@@ -1,15 +1,15 @@
 ﻿using System.Text;
 using Kaenx.Konnect.Messages.Response;
-using KnxFtpClient.Lib;
+using KnxFileTransferClient.Lib;
 
-namespace KnxFtpClient;
+namespace KnxFileTransferClient;
 
 
 class Program
 {    
     private static Kaenx.Konnect.Connections.KnxIpTunneling? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
-    private static FtpClient? client = null;
+    private static FileTransferClient? client = null;
 
     static async Task<int> Main(string[] args)
     {
@@ -18,7 +18,7 @@ class Program
         var versionString = "";
         if (version != null) 
             versionString = string.Format(" {0}.{1}.{2}", version.Major, version.Minor, version.Build);
-        Console.WriteLine("Willkommen zum KnxFtpClient{0}!!", versionString);
+        Console.WriteLine("Willkommen zum KnxFileTransferClient{0}!!", versionString);
         Console.WriteLine();
         Console.ResetColor();
 
@@ -39,7 +39,7 @@ class Program
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {args[1]} hergestellt");
-            client = new FtpClient(device);
+            client = new FileTransferClient(device);
 
             bool isOpen = false;
             do
@@ -99,7 +99,7 @@ class Program
                     }
                 }
             } while(isOpen);
-        } catch(FtpException ex)
+        } catch(FileTransferException ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error: " + ex.Message);
@@ -127,7 +127,7 @@ class Program
         Arguments args = new Arguments();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"KnxFtpClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
+        Console.WriteLine($"KnxFileTransferClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")})");
         Console.ResetColor();
         Console.WriteLine($"In Session:");
         Console.ForegroundColor = ConsoleColor.Yellow;
@@ -200,8 +200,8 @@ class Program
     private static async Task list(Arguments args)
     {
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
-        List<FtpPath> list = await client.List(args.Path1);
-        foreach(FtpPath path in list)
+        List<FileTransferPath> list = await client.List(args.Path1);
+        foreach(FileTransferPath path in list)
             Console.WriteLine($"        - {(path.IsFile ? "Datei ":"Ordner")} {path.Name}");
     }
     

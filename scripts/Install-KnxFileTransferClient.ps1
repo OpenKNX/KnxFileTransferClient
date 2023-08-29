@@ -15,7 +15,7 @@ if ($path) {
     $timeout = 1
 }
 
-Write-Host "Kopiere KnxFtpClient..."
+Write-Host "Kopiere KnxFileTransferClient..."
 
 $os = "??-Bit"
 $setExecutable = 0
@@ -25,39 +25,39 @@ if ($?) {
         if ([Environment]::Is64BitOperatingSystem)
         {
             $os="Windows 64-Bit"
-            Copy-Item $path/KnxFtpClient-x64.exe ~/bin/KnxFtpClient.exe
+            Copy-Item $path/KnxFileTransferClient-x64.exe ~/bin/KnxFileTransferClient.exe
         }
         else
         {
             $os="Windows 32-Bit"
-            Copy-Item $path/KnxFtpClient-x86.exe ~/bin/KnxFtpClient.exe
+            Copy-Item $path/KnxFileTransferClient-x86.exe ~/bin/KnxFileTransferClient.exe
         }
     } elseif ($IsMacOS) {
         $os = "Mac OS"
         $setExecutable = 1
-        Copy-Item $path/KnxFtpClient-osx64.exe ~/bin/KnxFtpClient
+        Copy-Item $path/KnxFileTransferClient-osx64.exe ~/bin/KnxFileTransferClient
     } elseif ($IsLinux) {
         $os = "Linux OS"
         $setExecutable = 1
-        Copy-Item $path/KnxFtpClient-linux64.exe ~/bin/KnxFtpClient
+        Copy-Item $path/KnxFileTransferClient-linux64.exe ~/bin/KnxFileTransferClient
     }
 }
 if (!$?) {
-    Write-Host "Kopieren fehlgeschlagen, KnxFtpClient ist nicht verfuegbar. Bitte versuchen Sie es erneut."
+    Write-Host "Kopieren fehlgeschlagen, KnxFileTransferClient ist nicht verfuegbar. Bitte versuchen Sie es erneut."
     if (timeout) {
         if ($IsMacOS -or $IsLinux) { Start-Sleep -Seconds 20 } else { timeout /T 20 }
     }
     Exit 1
 }
-$version = (Get-Item ~/bin/KnxFtpClient.exe).VersionInfo
+$version = (Get-Item ~/bin/KnxFileTransferClient.exe).VersionInfo
 $versionString = "$($version.FileMajorPart).$($version.FileMinorPart).$($version.FileBuildPart)"
 
 Write-Host "
     Folgende Tools ($os) wurden im Verzeichnis ~/bin verfuegbar gemacht:
-        KnxFtpClient $versionString - OpenKNX Firmware Update ueber den KNX-Bus
+        KnxFileTransferClient $versionString - OpenKNX Firmware Update ueber den KNX-Bus
 "
 if ($setExecutable) {
-    Write-Host "ACHTUNG: Die Datei ~/bin/KnxFtpClient muss not mit chmod +x ausfuehrbar gemacht werden. Dies muss ueber Kommandozeile geschehen, solange wir keine andere Loesung hierfuer gefunen haben."
+    Write-Host "ACHTUNG: Die Datei ~/bin/KnxFileTransferClient muss not mit chmod +x ausfuehrbar gemacht werden. Dies muss ueber Kommandozeile geschehen, solange wir keine andere Loesung hierfuer gefunen haben."
 }
 
 if ($timeout) {

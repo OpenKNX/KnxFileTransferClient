@@ -2,7 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kaenx-Konnect\Kaenx.Konnect\Kaenx.Konnect.csproj" />
-    <ProjectReference Include="..\KnxFtpClient.Lib\KnxFtpClient.Lib.csproj" />
+    <ProjectReference Include="..\KnxFileTransferClient.Lib\KnxFileTransferClient.Lib.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -1,4 +1,4 @@
-# KnxFtpClient
+# KnxFileTransferClient
 
 This console app is uploading/downloading files to the filesystem of your knx-device.  
 It can also list all content of a directory or create/delete one.  
@@ -21,11 +21,11 @@ On an empty Bus we can get up to 570 Bytes/s.
 ## Usage
 You can use this console app on windows, linux or mac.  
 The specified arguments are:  
->KnxFtpClient help
+>KnxFileTransferClient help
 
 Will show you the arguments and its definition.
 
->KnxFtpClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port=3671 --delay=0 --pkg=228)
+>KnxFileTransferClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?> (--port=3671 --delay=0 --pkg=228)
 
 |Argument|Definition|
 |---|---|

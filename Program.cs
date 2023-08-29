@@ -11,24 +11,22 @@ class Program
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
     private static FileTransferClient? client = null;
 
+
     static async Task<int> Main(string[] args)
     {
         Console.ForegroundColor = ConsoleColor.Green;
-        var version = typeof(Program).Assembly.GetName().Version;
-        var versionString = "";
-        if (version != null) 
-            versionString = string.Format(" {0}.{1}.{2}", version.Major, version.Minor, version.Build);
-        Console.WriteLine("Willkommen zum KnxFileTransferClient{0}!!", versionString);
+        Console.WriteLine("Willkommen zum KnxFileTransferClient!!");
         Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        var version = typeof(Program).Assembly.GetName().Version;
+        Console.WriteLine($"Version Client:     {version.Major}.{version.Minor}.{version.Build}");
+        Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
         Console.ResetColor();
 
         if(args.Length == 0 || args[0] == "help")
             return help();
 
         Arguments arguments = new Arguments(args);
-        
-        
-        var startTime = DateTime.Now;
         int code = -2;
 
         try
@@ -39,6 +37,10 @@ class Program
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {args[1]} hergestellt");
+            string remoteVersion = await client.CheckVersion();
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Version Remote:     {remoteVersion}");
+            Console.ResetColor();
             client = new FileTransferClient(device);
 
             bool isOpen = false;

@@ -26,10 +26,10 @@ class Program
         Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
         Console.ResetColor();
 
-        if(args.Length == 0 || args[0] == "help")
+        Arguments arguments = new Arguments(args);
+        if(arguments.Command == "help")
             return help();
 
-        Arguments arguments = new Arguments(args);
         Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
         Console.WriteLine($"IP-Port:    {arguments.Get<int>("port")}");
         Console.WriteLine($"PA:         {arguments.PhysicalAddress}");
@@ -43,10 +43,10 @@ class Program
             else
                 conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
 
-            await conn.Connect();
+            //await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
-            await device.Connect();
+            //await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
             string remoteVersion = await client.CheckVersion();

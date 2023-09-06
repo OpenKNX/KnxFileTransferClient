@@ -47,12 +47,12 @@ class Program
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             await device.Connect();
-            Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {args[1]} hergestellt");
+            Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            client = new FileTransferClient(device);
             string remoteVersion = await client.CheckVersion();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine($"Version Remote:     {remoteVersion}");
             Console.ResetColor();
-            client = new FileTransferClient(device);
 
             bool isOpen = false;
             do

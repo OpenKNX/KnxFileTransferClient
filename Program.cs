@@ -249,8 +249,11 @@ class Program
     {
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
         List<FileTransferPath> list = await client.List(args.Path1);
+        string root = args.Path1;
+        if(!root.EndsWith("/"))
+            root += "/";
         foreach(FileTransferPath path in list)
-            Console.WriteLine($"        - {(path.IsFile ? "Datei ":"Ordner")} {path.Name}");
+            Console.WriteLine($"        - {(path.IsFile ? "Datei ":"Ordner")} {root}{path.Name}");
     }
     
     private static async Task mkdir(Arguments args)

@@ -17,10 +17,10 @@ dotnet.exe publish KnxFileTransferClient.csproj -c Debug -r osx-x64   --self-con
 dotnet.exe publish KnxFileTransferClient.csproj -c Debug -r linux-x64 --self-contained true /p:PublishSingleFile=true
 
 # copy package content 
-Copy-Item bin/Debug/net6.0/win-x64/publish/KnxFileTransferClient.exe   release/tools/KnxFileTransferClient-x64.exe
-Copy-Item bin/Debug/net6.0/win-x86/publish/KnxFileTransferClient.exe   release/tools/KnxFileTransferClient-x86.exe
-Copy-Item bin/Debug/net6.0/osx-x64/publish/KnxFileTransferClient       release/tools/KnxFileTransferClient-osx64.exe
-Copy-Item bin/Debug/net6.0/linux-x64/publish/KnxFileTransferClient     release/tools/KnxFileTransferClient-linux64.exe
+Copy-Item bin/Debug/net7.0/win-x64/publish/KnxFileTransferClient.exe   release/tools/KnxFileTransferClient-x64.exe
+Copy-Item bin/Debug/net7.0/win-x86/publish/KnxFileTransferClient.exe   release/tools/KnxFileTransferClient-x86.exe
+Copy-Item bin/Debug/net7.0/osx-x64/publish/KnxFileTransferClient       release/tools/KnxFileTransferClient-osx64.exe
+Copy-Item bin/Debug/net7.0/linux-x64/publish/KnxFileTransferClient     release/tools/KnxFileTransferClient-linux64.exe
 
 # add necessary scripts
 # Copy-Item scripts/Readme-Release.txt release/

@@ -33,7 +33,10 @@ internal class Arguments{
         List<string> argL = new(args);
         ParseArgs(argL);
         
-        Command = argL[0];
+        if(argL.Count > 1)
+            Command = argL[0];
+        else
+            Command = "help";
 
         if(Command == "close" || Command == "help")
             return;
@@ -65,12 +68,6 @@ internal class Arguments{
 
                     Set("ga", $"{bl}.{hl}.{ta}");
                 }
-
-                if(args.Length > 1)
-                    Path1 = args[1];
-                
-                if(args.Length > 2)
-                    Path2 = args[2];
             }
 
             if(!string.IsNullOrEmpty(Get<string>("config")))
@@ -98,9 +95,14 @@ internal class Arguments{
                 GetRequiredArguments();
             }
 
-
             Interface = Get<string>("gw");
             PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));
+
+            if(args.Length > 1)
+                Path1 = args[1];
+            
+            if(args.Length > 2)
+                Path2 = args[2];
         }
     }
 

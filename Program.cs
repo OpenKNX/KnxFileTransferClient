@@ -212,6 +212,9 @@ class Program
     
     private static async Task exists(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+            
         Console.WriteLine("Info:  Exists - " + args.Path1);
         bool exists = await client.Exists(args.Path1);
         Console.WriteLine("Info:  Existiert" + (exists ? "":" nicht"));
@@ -219,6 +222,12 @@ class Program
 
     private static async Task rename(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Source-Pfad angegeben");
+            
+        if(string.IsNullOrEmpty(args.Path2))
+            throw new Exception("Kein Ziel-Pfad angegeben");
+            
         Console.WriteLine("Info:  Umbenennen - " + args.Path1 + " in " + args.Path2);
         await client.Rename(args.Path1, args.Path2);
         Console.WriteLine("Info:  Umbenennen erfolgreich");
@@ -226,6 +235,12 @@ class Program
 
     private static async Task upload(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Source-Pfad angegeben");
+            
+        if(string.IsNullOrEmpty(args.Path2))
+            throw new Exception("Kein Ziel-Pfad angegeben");
+            
         Console.WriteLine("Info:  Datei hochladen - von " + args.Path1 + " in " + args.Path2);
         await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei hochladen abgeschlossen");
@@ -233,6 +248,12 @@ class Program
 
     private static async Task download(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Source-Pfad angegeben");
+            
+        if(string.IsNullOrEmpty(args.Path2))
+            throw new Exception("Kein Ziel-Pfad angegeben");
+            
         Console.WriteLine("Info:  Datei runterladen - in " + args.Path1 + " von " + args.Path2);
         await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
@@ -240,6 +261,9 @@ class Program
 
     private static async Task delete(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+
         Console.WriteLine("Info:  Datei löschen - " + args.Path1);
         await client.FileDelete(args.Path1);
         Console.WriteLine("Info:  Datei erfolgreich gelöscht");
@@ -247,6 +271,9 @@ class Program
 
     private static async Task list(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+
         Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
         List<FileTransferPath> list = await client.List(args.Path1);
         string root = args.Path1;
@@ -258,6 +285,9 @@ class Program
     
     private static async Task mkdir(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+
         Console.WriteLine("Info:  Ordner erstellen - " + args.Path1);
         await client.DirCreate(args.Path1);
         Console.WriteLine("Info:  Ordner erfolgreich erstellt");
@@ -265,6 +295,9 @@ class Program
     
     private static async Task rmdir(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+
         Console.WriteLine("Info:  Ordner löschen - " + args.Path1);
         await client.DirDelete(args.Path1);
         Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
@@ -272,13 +305,11 @@ class Program
     
     private static async Task update(Arguments args)
     {
+        if(string.IsNullOrEmpty(args.Path1))
+            throw new Exception("Kein Pfad angegeben");
+
         if (!File.Exists(args.Path1))
-        {
-            Console.WriteLine("Error: Das Programm kann die angegebene Firmware nicht finden");
-            if(args.Get<bool>("verbose"))
-                Console.WriteLine("Datei: " + args.Path1);
-            return;
-        }
+            throw new Exception("Das Programm kann die angegebene Firmware nicht finden");
 
         string extension = args.Path1.Substring(args.Path1.LastIndexOf("."));
         switch(extension)

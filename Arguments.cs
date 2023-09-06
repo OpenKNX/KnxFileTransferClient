@@ -58,18 +58,20 @@ internal class Arguments{
                 {
                     string addrX = Get<string>("pa");
                     if(addrX == "")
-                        addrX = "0.0.1";
-                    string[] addrP = addrX.Split(".");
-                    int bl = int.Parse(addrP[0]);
-                    int hl = int.Parse(addrP[1]);
-                    int ta = 255;
+                        Set("ga", "0.0.1");
+                    else {
+                        string[] addrP = addrX.Split(".");
+                        int bl = int.Parse(addrP[0]);
+                        int hl = int.Parse(addrP[1]);
+                        int ta = 255;
 
-                    if(hl == 0)
-                        bl--;
-                    else
-                        hl--;
+                        if(hl == 0)
+                            bl--;
+                        else
+                            hl--;
 
-                    Set("ga", $"{bl}.{hl}.{ta}");
+                        Set("ga", $"{bl}.{hl}.{ta}");
+                    }
                 }
             }
 

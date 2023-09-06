@@ -1,3 +1,4 @@
+using System.Dynamic;
 using System.Net;
 using Kaenx.Konnect.Addresses;
 
@@ -5,13 +6,18 @@ namespace KnxFileTransferClient;
 
 internal class Arguments{
     
-    private static Dictionary<string, int> arguments = new Dictionary<string, int> {
-        {"port", 3671},
-        {"delay", 0},
-        {"pkg", 128},
-        {"errors", 3},
-        {"force", 0},
-        {"routing", 0},
+    private static List<Argument> arguments = new List<Argument> {
+        new("delay", "Delay", Argument.ArgumentType.Int, 0, false),
+        new("pkg", "Package Size", Argument.ArgumentType.Int, 128, false),
+        new("force", "Force", Argument.ArgumentType.Bool, false, false),
+        new("routing", "Routing", Argument.ArgumentType.Bool, false, false),
+        new("verbose", "Verbose", Argument.ArgumentType.Bool, false, false),
+        new("pa", "Physical Address", Argument.ArgumentType.String, "", true),
+        new("port", "Port", Argument.ArgumentType.Int, 3671, false),
+        new("gw", "Gateway IP", Argument.ArgumentType.String, "", true),
+        new("ga", "Gateway PA", Argument.ArgumentType.String, "", false),
+        new("save", "Speichere aktuelle Konfiguration", Argument.ArgumentType.Bool, false, false),
+        new("config", "Konfigurationsname", Argument.ArgumentType.String, "", false)
     };
 
     public UnicastAddress? PhysicalAddress { get; } = null;
@@ -24,84 +30,188 @@ internal class Arguments{
 
     public Arguments(string[] args, bool isOpen = false)
     {
-        Command = args[0];
+        List<string> argL = new(args);
+        ParseArgs(argL);
         
-        foreach (string arg in args.Where(a => a.StartsWith("--")))
-        {
-            string[] sp = arg.Split("=");
-            string name = sp[0].Substring(2);
-            if (sp.Length == 1)
-            {
-                arguments[name] = 1;
-            }
-            else
-            {
-                if (!arguments.ContainsKey(name))
-                    throw new Exception("Unbekanntes Argument: " + name);
-                    
-                arguments[name] = int.Parse(sp[1]);
-            }
-        }
-
-        if(Command == "open")
-        {
-            if(arguments["routing"] == 1)
-            {
-                if(args[1].Split(".").Length == 4)
-                {
-                    Interface = args[1];
-                    PhysicalAddress = UnicastAddress.FromString(args[2]);
-                } else {
-                    Interface = "224.0.23.12";
-                    PhysicalAddress = UnicastAddress.FromString(args[1]);
-                }
-            } else {
-                Interface = args[1];
-                PhysicalAddress = UnicastAddress.FromString(args[2]);
-            }
-            return;
-        }
+        Command = argL[0];
 
         if(Command == "close" || Command == "help")
             return;
 
         if(isOpen)
         {
-            Path1 = args[1];
-            if(args.Length > 2 && !args[2].StartsWith("--"))
+            if(args.Length > 1)
+                Path1 = args[1];
+            
+            if(args.Length > 2)
                 Path2 = args[2];
         } else {
-            if(arguments["routing"] == 1)
+            if(Get<bool>("routing"))
             {
-                if(args[1].Split(".").Length == 4)
+                if(string.IsNullOrEmpty(Get<string>("gw")))
+                    Set("gw", "224.0.23.12");
+
+                if(string.IsNullOrEmpty(Get<string>("ga")))
                 {
-                    Interface = args[1];
-                    PhysicalAddress = UnicastAddress.FromString(args[2]);
-                    Path1 = args[3];
-                    if(args.Length > 4 && !args[4].StartsWith("--"))
-                        Path2 = args[4];
+                    string[] addrP = Get<string>("pa").Split(".");
+                    int bl = int.Parse(addrP[0]);
+                    int hl = int.Parse(addrP[1]);
+                    int ta = 255;
+
+                    if(hl == 0)
+                        bl--;
+                    else
+                        hl--;
+
+                    Set("ga", $"{bl}.{hl}.{ta}");
+                }
+
+                if(args.Length > 1)
+                    Path1 = args[1];
+                
+                if(args.Length > 2)
+                    Path2 = args[2];
+            }
+
+            if(!string.IsNullOrEmpty(Get<string>("config")))
+            {
+                string configName = Get<string>("config");
+                string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+                if(!Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+                
+                if(Get<bool>("save"))
+                {
+                    GetRequiredArguments();
+                    string toSave = $"--gw {Get<string>("gw")} --port {Get<int>("port")} --pkg {Get<int>("pkg")}";
+                    if(!string.IsNullOrEmpty(Get<string>("ga")))
+                        toSave += $" --ga {Get<string>("ga")}";
+                    if(Get<bool>("routing"))
+                        toSave += " --routing";
+
+                    File.WriteAllText(Path.Combine(path, configName), toSave);
                 } else {
-                    Interface = "224.0.23.12";
-                    PhysicalAddress = UnicastAddress.FromString(args[1]);
-                    Path1 = args[2];
-                    if(args.Length > 4 && !args[3].StartsWith("--"))
-                        Path2 = args[3];
+                    string configContent = File.ReadAllText(Path.Combine(path, configName));
+                    ParseArgs(new(configContent.Split(" ")));
                 }
             } else {
-                Interface = args[1];
-                PhysicalAddress = UnicastAddress.FromString(args[2]);
-                Path1 = args[3];
-                if(args.Length > 4 && !args[4].StartsWith("--"))
-                    Path2 = args[4];
+                GetRequiredArguments();
+            }
+
+
+            Interface = Get<string>("gw");
+            PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));
+        }
+    }
+
+    private void GetRequiredArguments()
+    {
+        foreach(Argument arg in arguments.Where(a => a.Required))
+        {
+            switch(arg.Type)
+            {
+                case Argument.ArgumentType.String:
+                {
+                    if(string.IsNullOrEmpty(ConvertTo<string>(arg.Value)))
+                        GetRequiredArgument(arg);
+                    break;
+                }
+
+                default:
+                    throw new Exception("Unbekannter Argumenttyp: " + arg.Type.ToString());
             }
         }
     }
 
-    public int Get(string name)
+    private void ParseArgs(List<string> argL)
     {
-        if(!arguments.ContainsKey(name))
-            throw new Exception("Unbekanntes Argument: " + name);
+        while(argL.Any(a => a.StartsWith("--")))
+        {
+            string argstr = argL.First(a => a.StartsWith("--")).Substring(2);
+            int index = argL.IndexOf("--" + argstr);
+            Argument? arg = arguments.SingleOrDefault(a => a.Name == argstr);
 
-        return arguments[name];
+            if(arg == null)
+            {
+                Console.WriteLine("Unbekanntes Argument: " + argstr);
+            } else {
+                switch(arg.Type)
+                {
+                    case Argument.ArgumentType.Int:
+                    {
+                        arg.Value = int.Parse(argL[index + 1]);
+                        break;
+                    }
+
+                    case Argument.ArgumentType.Bool:
+                    {
+                        arg.Value = true;
+                        break;
+                    }
+
+                    case Argument.ArgumentType.String:
+                    {
+                        arg.Value = argL[index + 1];
+                        break;
+                    }
+                }
+            }
+
+            argL.RemoveAt(index);
+            if(arg?.Type != Argument.ArgumentType.Bool)
+                argL.RemoveAt(index);
+        }
+    }
+
+    private void GetRequiredArgument(Argument arg)
+    {
+        switch(arg.Name)
+        {
+            case "gw":
+            {
+                Console.Write("Bitte IP des Gateways eingeben: ");
+                string input = Console.ReadLine() ?? "";
+                arg.Value = input;
+                break;
+            }
+            
+            case "pa":
+            {
+                Console.Write("Bitte PA des Zielgerätes eingeben: ");
+                string input = Console.ReadLine() ?? "";
+                arg.Value = input;
+                break;
+            }
+
+            default:
+                throw new Exception("Unbekanntes Argument: " + arg.Name);
+        }
+    }
+
+    public List<Argument> GetArguments()
+    {
+        return arguments;
+    }
+
+    public void Set(string name, object value)
+    {
+        Argument? arg = arguments.SingleOrDefault(a => a.Name == name);
+        if(arg == null)
+            throw new Exception("Kein Argument mit dem Namen gefunden: " + name);
+        arg.Value = value;
+    }
+
+    public T Get<T>(string name)
+    {
+        Argument? arg = arguments.SingleOrDefault(a => a.Name == name);
+        if(arg == null)
+            throw new Exception("Kein Argument mit dem Namen gefunden: " + name);
+
+        return ConvertTo<T>(arg.Value);
+    }
+
+    private T ConvertTo<T>(object value)
+    {
+        return (T)Convert.ChangeType(value, typeof(T));
     }
 }

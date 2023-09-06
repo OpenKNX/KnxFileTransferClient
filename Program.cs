@@ -30,18 +30,18 @@ class Program
             return help();
 
         Arguments arguments = new Arguments(args);
-        Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get("routing") == 1 ? " (Multicast)" : ""));
-        Console.WriteLine($"IP-Port:    {arguments.Get("port")}");
+        Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
+        Console.WriteLine($"IP-Port:    {arguments.Get<int>("port")}");
         Console.WriteLine($"PA:         {arguments.PhysicalAddress}");
         Console.WriteLine();
         int code = -2;
 
         try
         {
-            if(arguments.Get("routing") != 0)
-                conn = new Kaenx.Konnect.Connections.KnxIpRouting(arguments.PhysicalAddress, arguments.Interface, arguments.Get("port"));
+            if(arguments.Get<bool>("routing"))
+                conn = new Kaenx.Konnect.Connections.KnxIpRouting(arguments.PhysicalAddress, arguments.Interface, arguments.Get<int>("port"));
             else
-                conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get("port"));
+                conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
 
             await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
@@ -127,12 +127,16 @@ class Program
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error: " + ex.Message);
+            if(arguments.Get<bool>("verbose"))
+                Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error: " + ex.Message);
+            if(arguments.Get<bool>("verbose"))
+                Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
             return -1;
         }
@@ -151,25 +155,43 @@ class Program
         Arguments args = new Arguments();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"KnxFileTransferClient <Command> <IP-Address> <PhysicalAddress> <Source?> <Target?>");
-        Console.WriteLine($"                (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")} --routing)");
+        Console.WriteLine($"KnxFileTransferClient <Command> <Source?> <Target?>");
+
+        Console.Write($"               ");
+        foreach(Argument arg in args.GetArguments())
+        {
+            Console.Write($" --{arg.Name}");
+            if(arg.Type != Argument.ArgumentType.Bool)
+                Console.Write($" {arg.Value}");
+        }
+        Console.WriteLine();
         Console.ResetColor();
         Console.WriteLine($"In Session:");
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"<Command> <Source?> <Target?> (--port={args.Get("port")} --delay={args.Get("delay")} --pkg={args.Get("pkg")} --errors={args.Get("errors")} --routing)");
+        Console.WriteLine($"<Command> <Source?> <Target?>");
         Console.ResetColor();
         Console.WriteLine();
         Console.WriteLine("Command:         Command to execute");
         Console.WriteLine("                 format/exists/rename/list/mkdir/rmdir/open/close");
         Console.WriteLine("                 upload/download/update/delete");
-        Console.WriteLine("IP-Address:      IP of the KNX-IP-interface");
-        Console.WriteLine("PhysicalAddress: Address of the KNX-Device (1.2.120)");
         Console.WriteLine("Source*:         Path to the file on the host");
         Console.WriteLine("Target**:        Path to the file on the knx device");
-        Console.WriteLine($"Port:            Optional - Port of the KNX-IP-interface ({args.Get("port")})");
-        Console.WriteLine($"Delay:           Optional - Delay after each telegram ({args.Get("delay")} ms)");
-        Console.WriteLine($"Package (pkg):   Optional - data size to transfer in one telegram ({args.Get("pkg")} bytes)");
-        Console.WriteLine($"Errors:          Optional - Max count of errors before abort update ({args.Get("errors")})");
+
+        int maxLength = 17;
+
+        foreach(Argument arg in args.GetArguments())
+        {
+            Console.Write(arg.Name);
+            for(int i = 0; i < maxLength-arg.Name.Length; i++)
+                Console.Write(" ");
+
+            Console.Write(arg.Display);
+
+            if(arg.Type != Argument.ArgumentType.Bool)
+                Console.Write($" (Default: {arg.Value})");
+            Console.WriteLine();
+        }
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
         Console.WriteLine("*  only at command upload/download");
@@ -205,14 +227,14 @@ class Program
     private static async Task upload(Arguments args)
     {
         Console.WriteLine("Info:  Datei hochladen - von " + args.Path1 + " in " + args.Path2);
-        await client.FileUpload(args.Path1, args.Path2, args.Get("pkg"));
+        await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei hochladen abgeschlossen");
     }
 
     private static async Task download(Arguments args)
     {
         Console.WriteLine("Info:  Datei runterladen - in " + args.Path1 + " von " + args.Path2);
-        await client.FileUpload(args.Path1, args.Path2, args.Get("pkg"));
+        await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
@@ -250,6 +272,8 @@ class Program
         if (!File.Exists(args.Path1))
         {
             Console.WriteLine("Error: Das Programm kann die angegebene Firmware nicht finden");
+            if(args.Get<bool>("verbose"))
+                Console.WriteLine("Datei: " + args.Path1);
             return;
         }
 
@@ -273,7 +297,7 @@ class Program
 
         if(extension == ".uf2")
         {
-            if(args.Get("force") == 0)
+            if(!args.Get<bool>("force"))
             {
                 List<Tag> tags = Converter.GetTags(args.Path1);
                 Tag? infoTag = tags.SingleOrDefault(t => t.Type == Converter.KNX_EXTENSION_TYPE);
@@ -305,6 +329,11 @@ class Program
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error beim Lesen der Version. Die Kompatibilität wird nicht geprüft!");
+                        if(args.Get<bool>("verbose"))
+                        {
+                            Console.WriteLine(ex.Message);
+                            Console.WriteLine(ex.StackTrace);
+                        }
                     }
 
                     
@@ -344,7 +373,7 @@ class Program
             //TODO do it above for all commands
             //client.ProcessChanged += ProcessChanged;
             try{
-                await client.FileUpload("/firmware.bin", stream, args.Get("pkg"));
+                await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
                 return;

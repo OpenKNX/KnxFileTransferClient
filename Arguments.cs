@@ -56,7 +56,10 @@ internal class Arguments{
 
                 if(string.IsNullOrEmpty(Get<string>("ga")))
                 {
-                    string[] addrP = Get<string>("pa").Split(".");
+                    string addrX = Get<string>("pa");
+                    if(addrX == "")
+                        addrX = "0.0.1";
+                    string[] addrP = addrX.Split(".");
                     int bl = int.Parse(addrP[0]);
                     int hl = int.Parse(addrP[1]);
                     int ta = 255;
@@ -90,6 +93,7 @@ internal class Arguments{
                 } else {
                     string configContent = File.ReadAllText(Path.Combine(path, configName));
                     ParseArgs(new(configContent.Split(" ")));
+                    GetRequiredArguments();
                 }
             } else {
                 GetRequiredArguments();

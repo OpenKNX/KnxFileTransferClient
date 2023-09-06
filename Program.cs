@@ -43,10 +43,10 @@ class Program
             else
                 conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
 
-            //await conn.Connect();
+            await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
-            //await device.Connect();
+            await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
             string remoteVersion = await client.CheckVersion();

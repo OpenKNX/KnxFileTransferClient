@@ -33,7 +33,7 @@ internal class Arguments{
         List<string> argL = new(args);
         ParseArgs(argL);
         
-        if(argL.Count > 1)
+        if(argL.Count > 0)
             Command = argL[0];
         else
             Command = "help";
@@ -43,11 +43,11 @@ internal class Arguments{
 
         if(isOpen)
         {
-            if(args.Length > 1)
-                Path1 = args[1];
+            if(argL.Count > 1)
+                Path1 = argL[1];
             
-            if(args.Length > 2)
-                Path2 = args[2];
+            if(argL.Count > 2)
+                Path2 = argL[2];
         } else {
             if(Get<bool>("routing"))
             {
@@ -98,11 +98,11 @@ internal class Arguments{
             Interface = Get<string>("gw");
             PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));
 
-            if(args.Length > 1)
-                Path1 = args[1];
+            if(argL.Count > 1)
+                Path1 = argL[1];
             
-            if(args.Length > 2)
-                Path2 = args[2];
+            if(argL.Count > 2)
+                Path2 = argL[2];
         }
     }
 

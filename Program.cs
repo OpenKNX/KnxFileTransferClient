@@ -242,6 +242,22 @@ class Program
             throw new Exception("Kein Ziel-Pfad angegeben");
             
         Console.WriteLine("Info:  Datei hochladen - von " + args.Path1 + " in " + args.Path2);
+        
+        if(await client.Exists(args.Path1))
+        {
+            Console.WriteLine("       Die Datei existiert bereits.");
+            Console.Write("       Datei löschen? (J/Y)");
+            string input = Console.ReadKey();
+            if(input != "j" && input != "y")
+            {
+                Console.WriteLine("Info:  Upload abgebrochen");
+                return;
+            }
+            await client.FileDelete(args.Path1);
+            Console.WriteLine("Info:  Datei wurde gelöscht");
+        }
+
+
         await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei hochladen abgeschlossen");
     }

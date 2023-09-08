@@ -247,6 +247,7 @@ class Program
         {
             Console.WriteLine("       Die Datei existiert bereits.");
             Console.Write("       Datei löschen? (J/Y): ");
+            await device.Disconnect();
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
@@ -254,6 +255,7 @@ class Program
                 Console.WriteLine("Info:  Upload abgebrochen");
                 return;
             }
+            await device.Connect();
             await client.FileDelete(args.Target);
             Console.WriteLine("");
             Console.WriteLine("Info:  Datei wurde gelöscht");

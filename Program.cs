@@ -258,7 +258,7 @@ class Program
         }
 
 
-        await client.FileUpload(args.Path2, args.Path1, args.Get<int>("pkg"));
+        await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei hochladen abgeschlossen");
     }
 

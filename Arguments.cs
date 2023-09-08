@@ -22,8 +22,8 @@ internal class Arguments{
 
     public UnicastAddress? PhysicalAddress { get; } = null;
     public string Interface { get; } = "";
-    public string Path1 { get; } = "";
-    public string Path2 { get; } = "";
+    public string Source { get; } = "";
+    public string Target { get; } = "";
     public string Command { get; } = "";
 
     public Arguments() { }
@@ -44,10 +44,10 @@ internal class Arguments{
         if(isOpen)
         {
             if(argL.Count > 1)
-                Path1 = argL[1];
+                Source = argL[1];
             
             if(argL.Count > 2)
-                Path2 = argL[2];
+                Target = argL[2];
         } else {
             if(Get<bool>("routing"))
             {
@@ -105,10 +105,10 @@ internal class Arguments{
             PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));
 
             if(argL.Count > 1)
-                Path1 = argL[1];
+                Source = argL[1];
             
             if(argL.Count > 2)
-                Path2 = argL[2];
+                Target = argL[2];
         }
     }
 

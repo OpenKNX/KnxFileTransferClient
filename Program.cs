@@ -212,38 +212,38 @@ class Program
     
     private static async Task exists(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
             
-        Console.WriteLine("Info:  Exists - " + args.Path1);
-        bool exists = await client.Exists(args.Path1);
+        Console.WriteLine("Info:  Exists - " + args.Source);
+        bool exists = await client.Exists(args.Source);
         Console.WriteLine("Info:  Existiert" + (exists ? "":" nicht"));
     }
 
     private static async Task rename(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
             
-        if(string.IsNullOrEmpty(args.Path2))
+        if(string.IsNullOrEmpty(args.Target))
             throw new Exception("Kein Ziel-Pfad angegeben");
             
-        Console.WriteLine("Info:  Umbenennen - " + args.Path1 + " in " + args.Path2);
-        await client.Rename(args.Path1, args.Path2);
+        Console.WriteLine("Info:  Umbenennen - " + args.Source + " in " + args.Target);
+        await client.Rename(args.Source, args.Target);
         Console.WriteLine("Info:  Umbenennen erfolgreich");
     }
 
     private static async Task upload(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
             
-        if(string.IsNullOrEmpty(args.Path2))
+        if(string.IsNullOrEmpty(args.Target))
             throw new Exception("Kein Ziel-Pfad angegeben");
             
-        Console.WriteLine("Info:  Datei hochladen - von " + args.Path1 + " in " + args.Path2);
+        Console.WriteLine("Info:  Datei hochladen - von " + args.Source + " in " + args.Target);
 
-        if(await client.Exists(args.Path2))
+        if(await client.Exists(args.Target))
         {
             Console.WriteLine("       Die Datei existiert bereits.");
             Console.Write("       Datei löschen? (J/Y)");
@@ -253,46 +253,46 @@ class Program
                 Console.WriteLine("Info:  Upload abgebrochen");
                 return;
             }
-            await client.FileDelete(args.Path2);
+            await client.FileDelete(args.Target);
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
 
-        await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
+        await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei hochladen abgeschlossen");
     }
 
     private static async Task download(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
             
-        if(string.IsNullOrEmpty(args.Path2))
+        if(string.IsNullOrEmpty(args.Target))
             throw new Exception("Kein Ziel-Pfad angegeben");
             
-        Console.WriteLine("Info:  Datei runterladen - von " + args.Path1 + " in " + args.Path2);
-        await client.FileDownload(args.Path1, args.Path2, args.Get<int>("pkg"));
+        Console.WriteLine("Info:  Datei runterladen - von " + args.Source + " in " + args.Target);
+        await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
     private static async Task delete(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
-        Console.WriteLine("Info:  Datei löschen - " + args.Path1);
-        await client.FileDelete(args.Path1);
+        Console.WriteLine("Info:  Datei löschen - " + args.Source);
+        await client.FileDelete(args.Source);
         Console.WriteLine("Info:  Datei erfolgreich gelöscht");
     }
 
     private static async Task list(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
-        Console.WriteLine("Info:  Ordner auflisten - " + args.Path1);
-        List<FileTransferPath> list = await client.List(args.Path1);
-        string root = args.Path1;
+        Console.WriteLine("Info:  Ordner auflisten - " + args.Source);
+        List<FileTransferPath> list = await client.List(args.Source);
+        string root = args.Source;
         if(!root.EndsWith("/"))
             root += "/";
         foreach(FileTransferPath path in list)
@@ -301,33 +301,33 @@ class Program
     
     private static async Task mkdir(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
-        Console.WriteLine("Info:  Ordner erstellen - " + args.Path1);
-        await client.DirCreate(args.Path1);
+        Console.WriteLine("Info:  Ordner erstellen - " + args.Source);
+        await client.DirCreate(args.Source);
         Console.WriteLine("Info:  Ordner erfolgreich erstellt");
     }
     
     private static async Task rmdir(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
-        Console.WriteLine("Info:  Ordner löschen - " + args.Path1);
-        await client.DirDelete(args.Path1);
+        Console.WriteLine("Info:  Ordner löschen - " + args.Source);
+        await client.DirDelete(args.Source);
         Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
     }
     
     private static async Task update(Arguments args)
     {
-        if(string.IsNullOrEmpty(args.Path1))
+        if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
-        if (!File.Exists(args.Path1))
+        if (!File.Exists(args.Source))
             throw new Exception("Das Programm kann die angegebene Firmware nicht finden");
 
-        string extension = args.Path1.Substring(args.Path1.LastIndexOf("."));
+        string extension = args.Source.Substring(args.Source.LastIndexOf("."));
         switch(extension)
         {
             case ".bin":
@@ -349,7 +349,7 @@ class Program
         {
             if(!args.Get<bool>("force"))
             {
-                List<Tag> tags = Converter.GetTags(args.Path1);
+                List<Tag> tags = Converter.GetTags(args.Source);
                 Tag? infoTag = tags.SingleOrDefault(t => t.Type == Converter.KNX_EXTENSION_TYPE);
 
                 if(infoTag != null)
@@ -402,7 +402,7 @@ class Program
         using(MemoryStream stream = new MemoryStream())
         {
             Console.WriteLine($"File:       wird umgewandelt und evtl komprimiert");
-            long origsize = FileHandler.GetBytes(stream, args.Path1); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
+            long origsize = FileHandler.GetBytes(stream, args.Source); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
             await device.Connect();
             Console.WriteLine($"Size:       {origsize} Bytes\t({origsize / 1024} kB) original");
             if(origsize != stream.Length)

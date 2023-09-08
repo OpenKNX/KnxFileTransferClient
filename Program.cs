@@ -254,8 +254,8 @@ class Program
         if(string.IsNullOrEmpty(args.Path2))
             throw new Exception("Kein Ziel-Pfad angegeben");
             
-        Console.WriteLine("Info:  Datei runterladen - in " + args.Path1 + " von " + args.Path2);
-        await client.FileUpload(args.Path1, args.Path2, args.Get<int>("pkg"));
+        Console.WriteLine("Info:  Datei runterladen - von " + args.Path1 + " in " + args.Path2);
+        await client.FileDownload(args.Path1, args.Path2, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 

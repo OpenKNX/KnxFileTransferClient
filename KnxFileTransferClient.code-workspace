@@ -5,6 +5,9 @@
 		},
 		{
 			"path": "../KnxFileTransferClient.Lib"
+		},
+		{
+			"path": "../Kaenx-Konnect"
 		}
 	],
 	"settings": {}

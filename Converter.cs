@@ -38,7 +38,6 @@ public class Converter
     {
         using(MemoryStream ms = new MemoryStream())
         {
-            bool checkedApp = false;
             int counter = 0;
             long addr = -1;
             Block block;

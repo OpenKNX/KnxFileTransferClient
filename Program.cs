@@ -246,14 +246,16 @@ class Program
         if(await client.Exists(args.Target))
         {
             Console.WriteLine("       Die Datei existiert bereits.");
-            Console.Write("       Datei löschen? (J/Y)");
+            Console.Write("       Datei löschen? (J/Y): ");
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
+                Console.WriteLine("");
                 Console.WriteLine("Info:  Upload abgebrochen");
                 return;
             }
             await client.FileDelete(args.Target);
+            Console.WriteLine("");
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 

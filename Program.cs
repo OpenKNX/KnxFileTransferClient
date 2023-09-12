@@ -214,6 +214,9 @@ class Program
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
+
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Exists - " + args.Source);
         bool exists = await client.Exists(args.Source);
@@ -240,6 +243,9 @@ class Program
             
         if(string.IsNullOrEmpty(args.Target))
             throw new Exception("Kein Ziel-Pfad angegeben");
+            
+        if(!args.Target.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Datei hochladen - von " + args.Source + " in " + args.Target);
 
@@ -274,6 +280,9 @@ class Program
         if(string.IsNullOrEmpty(args.Target))
             throw new Exception("Kein Ziel-Pfad angegeben");
             
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
+            
         Console.WriteLine("Info:  Datei runterladen - von " + args.Source + " in " + args.Target);
         await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
@@ -283,6 +292,9 @@ class Program
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
+            
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
 
         Console.WriteLine("Info:  Datei löschen - " + args.Source);
         await client.FileDelete(args.Source);
@@ -293,6 +305,9 @@ class Program
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
+            
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
 
         Console.WriteLine("Info:  Ordner auflisten - " + args.Source);
         List<FileTransferPath> list = await client.List(args.Source);
@@ -308,6 +323,9 @@ class Program
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner)");
+
         Console.WriteLine("Info:  Ordner erstellen - " + args.Source);
         await client.DirCreate(args.Source);
         Console.WriteLine("Info:  Ordner erfolgreich erstellt");
@@ -317,6 +335,9 @@ class Program
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
+
+        if(!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner)");
 
         Console.WriteLine("Info:  Ordner löschen - " + args.Source);
         await client.DirDelete(args.Source);

@@ -30,10 +30,12 @@ class Program
         if(arguments.Command == "help")
             return help();
 
+        Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
         Console.WriteLine($"IP-Port:    {arguments.Get<int>("port")}");
         Console.WriteLine($"PA:         {arguments.PhysicalAddress}");
         Console.WriteLine();
+        Console.ResetColor();
         int code = -2;
 
         try

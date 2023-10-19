@@ -16,6 +16,7 @@ internal class Arguments{
         new("port", "Port", Argument.ArgumentType.Int, 3671),
         new("gw", "Gateway IP", Argument.ArgumentType.String, "192.168.178.2"),
         new("ga", "Gateway PA", Argument.ArgumentType.String, "1.1.0"),
+        new("gs", "Routing Source Address", Argument.ArgumentType.String, "0.0.1"),
         new("config", "Konfigurationsname", Argument.ArgumentType.String, ""),
         new("no-input", "Keine Aufforderung für manuelle Eingaben", Argument.ArgumentType.Bool, false)
     };
@@ -64,21 +65,6 @@ internal class Arguments{
 
                     GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                     GetInputArg("ga", "PA des Routers", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
-                
-                    string[] addrP = Get<string>("ga").Split(".");
-                    int bl = int.Parse(addrP[0]);
-                    int hl = int.Parse(addrP[1]);
-                    int ta = 255;
-
-                    if(hl == 0)
-                        bl--;
-                    else
-                        hl--;
-
-                    Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine($"Verwende als source {bl}.{hl}.{ta}");
-                    Console.ResetColor();
-                    Set("ga", $"{bl}.{hl}.{ta}");
                 } else {
                     GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                 }
@@ -86,6 +72,23 @@ internal class Arguments{
             
             GetInputArg("pa", "PA des Update-Geräts", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
 
+            if(!GetWasSet("gs"))
+            {
+                string[] addrP = Get<string>("ga").Split(".");
+                int bl = int.Parse(addrP[0]);
+                int hl = int.Parse(addrP[1]);
+                int ta = 255;
+
+                if(hl == 0)
+                    bl--;
+                else
+                    hl--;
+                Set("gs", $"{bl}.{hl}.{ta}");
+            }
+
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Verwende als source address {Get<string>("gs")}");
+            Console.ResetColor();
 
 
             if(configName != "default")
@@ -155,6 +158,7 @@ internal class Arguments{
             {
                 Console.WriteLine("Unbekanntes Argument: " + argstr);
             } else {
+                arg.WasSet = true;
                 switch(arg.Type)
                 {
                     case Argument.ArgumentType.Int:
@@ -240,6 +244,14 @@ internal class Arguments{
         }
 
         return response;
+    }
+
+    private bool GetWasSet(string name)
+    {
+        Argument? arg = arguments.SingleOrDefault(a => a.Name == name);
+        if(arg == null)
+            throw new Exception("Kein Argument mit dem Namen gefunden: " + name);
+        return arg.WasSet;
     }
 
     private bool CheckInput(string? answer, string regex)

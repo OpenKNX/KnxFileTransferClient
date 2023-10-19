@@ -90,13 +90,9 @@ internal class Arguments{
             Console.WriteLine($"Verwende als source address {Get<string>("gs")}");
             Console.ResetColor();
 
-
-            if(configName != "default")
-            {
-                string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
-                string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
-                File.WriteAllText(Path.Combine(path, configName), def);
-            }
+            string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+            string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
+            File.WriteAllText(Path.Combine(path, configName), def);
 
             Interface = Get<string>("gw");
             PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));

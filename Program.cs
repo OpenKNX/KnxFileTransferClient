@@ -113,7 +113,7 @@ class Program
                         isOpen = false;
                         break;
                     }
-                    case "update":
+                    case "fwupdate":
                         await update(arguments);
                         break;
                     default:
@@ -175,7 +175,7 @@ class Program
         Console.WriteLine();
         Console.WriteLine("Command:         Command to execute");
         Console.WriteLine("                 format/exists/rename/list/mkdir/rmdir/open/close");
-        Console.WriteLine("                 upload/download/update/delete");
+        Console.WriteLine("                 upload/download/fwupdate/delete");
         Console.WriteLine("Source*:         Path to the file on the host");
         Console.WriteLine("Target**:        Path to the file on the knx device");
 

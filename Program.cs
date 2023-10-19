@@ -382,10 +382,7 @@ class Program
                 if(infoTag != null)
                 {
                     await device.Connect();
-                    uint deviceOpenKnxId = 0;
-                    uint deviceAppNumber = 0;
-                    uint deviceAppVersion  = 0;
-                    uint deviceAppRevision = 0;
+                    uint deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision = 0;
                     
                     try
                     {

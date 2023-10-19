@@ -29,6 +29,7 @@ public class Converter
                     output.AddRange(block.Tags);
                 }
             }
+            counter++;
         } while(block.Sequence < block.BlockCount -1);
 
         return output;

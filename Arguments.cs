@@ -7,17 +7,17 @@ namespace KnxFileTransferClient;
 internal class Arguments{
     
     private static List<Argument> arguments = new List<Argument> {
-        new("delay", "Delay", Argument.ArgumentType.Int, 0, false),
-        new("pkg", "Package Size", Argument.ArgumentType.Int, 128, false),
-        new("force", "Force", Argument.ArgumentType.Bool, false, false),
-        new("routing", "Routing", Argument.ArgumentType.Bool, false, false),
-        new("verbose", "Verbose", Argument.ArgumentType.Bool, false, false),
-        new("pa", "Physical Address", Argument.ArgumentType.String, "", true),
-        new("port", "Port", Argument.ArgumentType.Int, 3671, false),
-        new("gw", "Gateway IP", Argument.ArgumentType.String, "", true),
-        new("ga", "Gateway PA", Argument.ArgumentType.String, "", false),
-        new("save", "Speichere aktuelle Konfiguration", Argument.ArgumentType.Bool, false, false),
-        new("config", "Konfigurationsname", Argument.ArgumentType.String, "", false)
+        new("delay", "Delay", Argument.ArgumentType.Int, 0),
+        new("pkg", "Package Size", Argument.ArgumentType.Int, 128),
+        new("force", "Force", Argument.ArgumentType.Bool, false),
+        new("routing", "Routing", Argument.ArgumentType.Bool, false),
+        new("verbose", "Verbose", Argument.ArgumentType.Bool, false),
+        new("pa", "Physical Address", Argument.ArgumentType.String, "1.1.255"),
+        new("port", "Port", Argument.ArgumentType.Int, 3671),
+        new("gw", "Gateway IP", Argument.ArgumentType.String, "192.168.178.2"),
+        new("ga", "Gateway PA", Argument.ArgumentType.String, "1.1.0"),
+        new("config", "Konfigurationsname", Argument.ArgumentType.String, ""),
+        new("no-input", "Keine Aufforderung für manuelle Eingaben", Argument.ArgumentType.Bool, false)
     };
 
     public UnicastAddress? PhysicalAddress { get; } = null;
@@ -31,6 +31,8 @@ internal class Arguments{
     public Arguments(string[] args, bool isOpen = false)
     {
         List<string> argL = new(args);
+        string configName = GetConfigArg(args);
+        LoadArgs(configName, args);
         ParseArgs(argL);
         
         if(argL.Count > 0)
@@ -49,56 +51,48 @@ internal class Arguments{
             if(argL.Count > 2)
                 Target = argL[2];
         } else {
-            if(Get<bool>("routing"))
+
+            if(!Get<bool>("no-input"))
             {
-                if(string.IsNullOrEmpty(Get<string>("gw")))
-                    Set("gw", "224.0.23.12");
-
-                if(string.IsNullOrEmpty(Get<string>("ga")))
+                Console.WriteLine("Werte in Klammern sind default");
+                Console.WriteLine("Bei leerer Eingabe wird default übernommen");
+                bool changed = GetInputArg("routing", "Verbindung über Routing? [j/n]", "(j|n|True|False)");
+                if(Get<bool>("routing"))
                 {
-                    string addrX = Get<string>("pa");
-                    if(addrX == "")
-                        Set("ga", "0.0.1");
-                    else {
-                        string[] addrP = addrX.Split(".");
-                        int bl = int.Parse(addrP[0]);
-                        int hl = int.Parse(addrP[1]);
-                        int ta = 255;
+                    if(changed)
+                        Set("gw", "224.0.23.12");
 
-                        if(hl == 0)
-                            bl--;
-                        else
-                            hl--;
+                    GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
+                    GetInputArg("ga", "PA des Routers", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
+                
+                    string[] addrP = Get<string>("ga").Split(".");
+                    int bl = int.Parse(addrP[0]);
+                    int hl = int.Parse(addrP[1]);
+                    int ta = 255;
 
-                        Set("ga", $"{bl}.{hl}.{ta}");
-                    }
+                    if(hl == 0)
+                        bl--;
+                    else
+                        hl--;
+
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"Verwende als source {bl}.{hl}.{ta}");
+                    Console.ResetColor();
+                    Set("ga", $"{bl}.{hl}.{ta}");
+                } else {
+                    GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                 }
             }
+            
+            GetInputArg("pa", "PA des Update-Geräts", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
 
-            if(!string.IsNullOrEmpty(Get<string>("config")))
+
+
+            if(configName != "default")
             {
-                string configName = Get<string>("config");
                 string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
-                if(!Directory.Exists(path))
-                    Directory.CreateDirectory(path);
-                
-                if(Get<bool>("save"))
-                {
-                    GetRequiredArguments();
-                    string toSave = $"--gw {Get<string>("gw")} --port {Get<int>("port")} --pkg {Get<int>("pkg")}";
-                    if(!string.IsNullOrEmpty(Get<string>("ga")))
-                        toSave += $" --ga {Get<string>("ga")}";
-                    if(Get<bool>("routing"))
-                        toSave += " --routing";
-
-                    File.WriteAllText(Path.Combine(path, configName), toSave);
-                } else {
-                    string configContent = File.ReadAllText(Path.Combine(path, configName));
-                    ParseArgs(new(configContent.Split(" ")));
-                    GetRequiredArguments();
-                }
-            } else {
-                GetRequiredArguments();
+                string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
+                File.WriteAllText(Path.Combine(path, configName), def);
             }
 
             Interface = Get<string>("gw");
@@ -109,26 +103,44 @@ internal class Arguments{
             
             if(argL.Count > 2)
                 Target = argL[2];
+
+            Console.WriteLine();
         }
     }
 
-    private void GetRequiredArguments()
+    private void LoadArgs(string configName, string[] args)
     {
-        foreach(Argument arg in arguments.Where(a => a.Required))
-        {
-            switch(arg.Type)
-            {
-                case Argument.ArgumentType.String:
-                {
-                    if(string.IsNullOrEmpty(ConvertTo<string>(arg.Value)))
-                        GetRequiredArgument(arg);
-                    break;
-                }
+        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+        if(!Directory.Exists(path))
+            Directory.CreateDirectory(path);
 
-                default:
-                    throw new Exception("Unbekannter Argumenttyp: " + arg.Type.ToString());
+        string toLoad = CheckConfigFile(path, configName);
+        arguments = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad)) ?? arguments;
+    }
+
+    private string CheckConfigFile(string path, string configName)
+    {
+        if(!File.Exists(Path.Combine(path, configName)))
+        {
+            if(configName != "default")
+            {
+                configName = "default";
+                return CheckConfigFile(path, configName);
+            } else {
+                string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
+                File.WriteAllText(Path.Combine(path, configName), def);
             }
         }
+        return Path.Combine(path, configName);
+    }
+
+    private string GetConfigArg(string[] args)
+    {
+        string? argument = args.FirstOrDefault(a => a == "--config");
+        if(argument == null) return "default";
+        
+        int index = Array.IndexOf(args, "--config");
+        return args[index+1];
     }
 
     private void ParseArgs(List<string> argL)
@@ -171,34 +183,86 @@ internal class Arguments{
         }
     }
 
-    private void GetRequiredArgument(Argument arg)
+    private bool GetInputArg(string name, string input, string regex)
     {
-        switch(arg.Name)
-        {
-            case "gw":
+        Argument arg = GetRaw(name);
+        string? answer;
+
+        do {
+            Console.Write(input + " ");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            switch(arg.Type)
             {
-                Console.Write("Bitte IP des Gateways eingeben: ");
-                string input = Console.ReadLine() ?? "";
-                arg.Value = input;
-                break;
+                case Argument.ArgumentType.Bool:
+                    Console.Write("(" + (Get<bool>(name) ? "j" : "n") +"): ");
+                    break;
+
+                case Argument.ArgumentType.Int:
+                    Console.Write($"({arg.Value}): ");
+                    break;
+
+                case Argument.ArgumentType.String:
+                    Console.Write($"({arg.Value}): ");
+                    break;
             }
-            
-            case "pa":
+            Console.ResetColor();
+
+            answer = Console.ReadLine();
+            if(string.IsNullOrEmpty(answer))
+                answer = arg.Value.ToString();
+        } while(!CheckInput(answer, regex));
+
+
+        bool response = false;
+
+        switch(arg.Type)
+        {
+            case Argument.ArgumentType.Bool:
             {
-                Console.Write("Bitte PA des Zielgerätes eingeben: ");
-                string input = Console.ReadLine() ?? "";
-                arg.Value = input;
+                bool temp = answer == "j" || answer == "True";
+                response = temp != Get<bool>(name);
+                arg.Value = temp;
                 break;
             }
 
-            default:
-                throw new Exception("Unbekanntes Argument: " + arg.Name);
+            case Argument.ArgumentType.Int:
+            {
+                int temp = int.Parse(answer ?? "0");
+                response = temp != Get<int>(name);
+                arg.Value = temp;
+                break;
+            }
+
+            case Argument.ArgumentType.String:
+                response = answer != Get<string>(name);
+                arg.Value = answer ?? "";
+                break;
         }
+
+        return response;
+    }
+
+    private bool CheckInput(string? answer, string regex)
+    {
+        if(string.IsNullOrEmpty(answer)) return false;
+
+        System.Text.RegularExpressions.Regex reg = new(regex);
+        if(!reg.IsMatch(answer)) return false;
+
+        return true;
     }
 
     public List<Argument> GetArguments()
     {
         return arguments;
+    }
+
+    private Argument GetRaw(string name)
+    {
+        Argument? arg = arguments.SingleOrDefault(a => a.Name == name);
+        if(arg == null)
+            throw new Exception("Kein Argument mit dem Namen gefunden: " + name);
+        return arg;
     }
 
     public void Set(string name, object value)

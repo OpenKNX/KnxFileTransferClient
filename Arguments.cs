@@ -26,6 +26,7 @@ internal class Arguments{
     public string Source { get; } = "";
     public string Target { get; } = "";
     public string Command { get; } = "";
+    private static readonly List<string> toSave = new() { "routing", "pa", "port", "gw", "ga", "gs", "pkg", "delay" };
 
     public Arguments() { }
 
@@ -90,9 +91,7 @@ internal class Arguments{
             Console.WriteLine($"Verwende als source address {Get<string>("gs")}");
             Console.ResetColor();
 
-            string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
-            string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
-            File.WriteAllText(Path.Combine(path, configName), def);
+            SaveArgs(configName);
 
             Interface = Get<string>("gw");
             PhysicalAddress = UnicastAddress.FromString(Get<string>("pa"));
@@ -114,7 +113,25 @@ internal class Arguments{
             Directory.CreateDirectory(path);
 
         string toLoad = CheckConfigFile(path, configName);
-        arguments = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad)) ?? arguments;
+        List<Argument> loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad));
+        foreach(Argument arg in loaded)
+        {
+            Argument x = GetRaw(arg.Name);
+            x.Value = arg.Value;
+        }
+    }
+
+    private void SaveArgs(string configName)
+    {
+        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+        List<Argument> argsDef = new();
+
+        foreach(Argument arg in arguments)
+            if(toSave.Contains(arg.Name))
+                argsDef.Add(arg);
+
+        string def = Newtonsoft.Json.JsonConvert.SerializeObject(argsDef);
+        File.WriteAllText(Path.Combine(path, configName), def);
     }
 
     private string CheckConfigFile(string path, string configName)
@@ -126,7 +143,13 @@ internal class Arguments{
                 configName = "default";
                 return CheckConfigFile(path, configName);
             } else {
-                string def = Newtonsoft.Json.JsonConvert.SerializeObject(arguments);
+                List<Argument> argsDef = new();
+
+                foreach(Argument arg in arguments)
+                    if(toSave.Contains(arg.Name))
+                        argsDef.Add(arg);
+
+                string def = Newtonsoft.Json.JsonConvert.SerializeObject(argsDef);
                 File.WriteAllText(Path.Combine(path, configName), def);
             }
         }

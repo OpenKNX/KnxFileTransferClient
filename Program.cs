@@ -12,6 +12,7 @@ class Program
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice device = null;
     private static FileTransferClient client = null;
+    private static Arguments arguments;
 
 
     static async Task<int> Main(string[] args)
@@ -26,9 +27,12 @@ class Program
         Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
         Console.ResetColor();
 
-        Arguments arguments = new Arguments(args);
+        arguments = new Arguments(args);
         if(arguments.Command == "help")
             return help();
+        
+        try { int top = Console.CursorTop; }
+        catch { canFancy = false; }
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
@@ -51,6 +55,8 @@ class Program
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
+            client.ProcessChanged += ProcessChanged;
+            client.OnError += OnError;
             string remoteVersion = await client.CheckVersion();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine($"Version Remote:     {remoteVersion}");
@@ -150,6 +156,87 @@ class Program
 
 
         return code;
+    }
+
+
+    static bool firstSpeed = true;
+    static bool firstDraw = true;
+    static bool canFancy = true;
+    static int errorCounting = 1;
+    private static void ProcessChanged(int progress, int speed, int timeLeft)
+    {
+        if(firstSpeed)
+        {
+            speed = 0;
+            timeLeft = 0;
+            firstSpeed = false;
+        }
+        if (firstDraw)
+        {
+            firstDraw = false;
+
+            if (canFancy)
+                Console.Write("Progress: [                    ]    % -     B/s -      s left");
+        }
+
+        if (canFancy)
+        {
+            Console.SetCursorPosition(36 - progress.ToString().Length, Console.CursorTop);
+            Console.Write(progress);
+
+            Console.SetCursorPosition(11, Console.CursorTop);
+            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write("=");
+
+            Console.SetCursorPosition(40, Console.CursorTop);
+            for (int i = 0; i < 3 - speed.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(speed);
+
+            Console.SetCursorPosition(50, Console.CursorTop);
+            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(timeLeft);
+
+            Console.SetCursorPosition(0, Console.CursorTop);
+        }
+        else
+        {
+            Console.Write("Progress: [");
+            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write("=");
+            for (int i = 0; i < 20 - ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write(" ");
+            Console.Write("] ");
+
+            for (int i = 0; i < (3 - progress.ToString().Length); i++)
+                Console.Write(" ");
+            Console.Write(progress + "% - ");
+
+            for (int i = 0; i < 3 - speed.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(speed + " B/s - ");
+
+            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(timeLeft + " s left");
+            Console.WriteLine();
+        }
+    }
+
+    private static void OnError(Exception ex)
+    {
+        if(canFancy && !firstDraw)
+        {
+            Console.SetCursorPosition(62, Console.CursorTop);
+            Console.WriteLine();
+        }
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Error ({errorCounting++:D2}): " + ex.Message);
+        if(arguments.Get<bool>("verbose"))
+            Console.WriteLine(ex.StackTrace);
+        Console.ResetColor();
+        firstDraw = true;
     }
 
     private static int help()
@@ -439,13 +526,6 @@ class Program
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
             DateTime startTime = DateTime.Now;
-            KnxFileTransferClient.Lib.FileTransferClient client = new KnxFileTransferClient.Lib.FileTransferClient(device);
-            string remoteVersion = await client.CheckVersion();
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Version Remote: " + remoteVersion);
-            Console.ResetColor();
-            //TODO do it above for all commands
-            //client.ProcessChanged += ProcessChanged;
             try{
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
             } catch {

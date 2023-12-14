@@ -1,4 +1,5 @@
-﻿using System.Reflection.Metadata;
+﻿using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Text;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
@@ -269,9 +270,11 @@ class Program
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
-
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
         await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"));
-        Console.WriteLine("Info:  Datei hochladen abgeschlossen");
+        sw.Stop();
+        Console.WriteLine($"Info:  Datei hochladen abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}");
     }
 
     private static async Task download(Arguments args)
@@ -286,8 +289,11 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Datei runterladen - von " + args.Source + " in " + args.Target);
+        Stopwatch sw = new Stopwatch();
+        sw.Start();
         await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"));
-        Console.WriteLine("Info:  Datei runterladen abgeschlossen");
+        sw.Stop();
+        Console.WriteLine("Info:  Datei runterladen abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}");
     }
 
     private static async Task delete(Arguments args)
@@ -444,16 +450,18 @@ class Program
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine("Version Remote: " + remoteVersion);
             Console.ResetColor();
-            //TODO do it above for all commands
-            //client.ProcessChanged += ProcessChanged;
             try{
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
+                sw.Stop();
+                Console.WriteLine($"Info:  Übertragung abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}                      ");
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
                 return;
             }
 
-            Console.WriteLine("Info:  Übertragung abgeschlossen. Gerät wird neu gestartet     ");
+            Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/firmware.bin" + char.MinValue));
         }
     }

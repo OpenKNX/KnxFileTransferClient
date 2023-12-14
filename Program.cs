@@ -13,6 +13,7 @@ class Program
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice device = null;
     private static FileTransferClient client = null;
+    private static Arguments arguments;
 
 
     static async Task<int> Main(string[] args)
@@ -27,9 +28,12 @@ class Program
         Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
         Console.ResetColor();
 
-        Arguments arguments = new Arguments(args);
+        arguments = new Arguments(args);
         if(arguments.Command == "help")
             return help();
+        
+        try { int top = Console.CursorTop; }
+        catch { canFancy = false; }
 
         Console.ForegroundColor = ConsoleColor.Cyan;
         Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
@@ -42,7 +46,7 @@ class Program
         try
         {
             if(arguments.Get<bool>("routing"))
-                conn = new Kaenx.Konnect.Connections.KnxIpRouting(arguments.PhysicalAddress, arguments.Interface, arguments.Get<int>("port"));
+                conn = new Kaenx.Konnect.Connections.KnxIpRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else
                 conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
 
@@ -52,6 +56,8 @@ class Program
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
+            client.ProcessChanged += ProcessChanged;
+            client.OnError += OnError;
             string remoteVersion = await client.CheckVersion();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine($"Version Remote:     {remoteVersion}");
@@ -151,6 +157,87 @@ class Program
 
 
         return code;
+    }
+
+
+    static bool firstSpeed = true;
+    static bool firstDraw = true;
+    static bool canFancy = true;
+    static int errorCounting = 1;
+    private static void ProcessChanged(int progress, int speed, int timeLeft)
+    {
+        if(firstSpeed)
+        {
+            speed = 0;
+            timeLeft = 0;
+            firstSpeed = false;
+        }
+        if (firstDraw)
+        {
+            firstDraw = false;
+
+            if (canFancy)
+                Console.Write("Progress: [                    ]    % -     B/s -      s left");
+        }
+
+        if (canFancy)
+        {
+            Console.SetCursorPosition(36 - progress.ToString().Length, Console.CursorTop);
+            Console.Write(progress);
+
+            Console.SetCursorPosition(11, Console.CursorTop);
+            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write("=");
+
+            Console.SetCursorPosition(40, Console.CursorTop);
+            for (int i = 0; i < 3 - speed.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(speed);
+
+            Console.SetCursorPosition(50, Console.CursorTop);
+            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(timeLeft);
+
+            Console.SetCursorPosition(0, Console.CursorTop);
+        }
+        else
+        {
+            Console.Write("Progress: [");
+            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write("=");
+            for (int i = 0; i < 20 - ((int)Math.Floor(progress / 5.0)); i++)
+                Console.Write(" ");
+            Console.Write("] ");
+
+            for (int i = 0; i < (3 - progress.ToString().Length); i++)
+                Console.Write(" ");
+            Console.Write(progress + "% - ");
+
+            for (int i = 0; i < 3 - speed.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(speed + " B/s - ");
+
+            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
+                Console.Write(" ");
+            Console.Write(timeLeft + " s left");
+            Console.WriteLine();
+        }
+    }
+
+    private static void OnError(Exception ex)
+    {
+        if(canFancy && !firstDraw)
+        {
+            Console.SetCursorPosition(62, Console.CursorTop);
+            Console.WriteLine();
+        }
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Error ({errorCounting++:D2}): " + ex.Message);
+        if(arguments.Get<bool>("verbose"))
+            Console.WriteLine(ex.StackTrace);
+        Console.ResetColor();
+        firstDraw = true;
     }
 
     private static int help()
@@ -373,7 +460,7 @@ class Program
                 break;
 
             case ".uf2":
-                Console.WriteLine("Info:  (beta) Die Firmware wird komprimiert übertragen!");
+                Console.WriteLine("Info:  Die Firmware wird komprimiert übertragen!");
                 break;
         }
 
@@ -387,6 +474,9 @@ class Program
 
                 if(infoTag != null)
                 {
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine($"Version UF2:    0x{infoTag.Data[0] << 8 | infoTag.Data[1]:X4} {infoTag.Data[2]>>4}.{infoTag.Data[2]&0xF}.{infoTag.Data[3]}");
+                    Console.ResetColor();
                     await device.Connect();
                     uint deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision = 0;
                     
@@ -398,6 +488,9 @@ class Program
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
                             deviceAppRevision = res[5]; //TODO check revision is here
+                            Console.ForegroundColor = ConsoleColor.DarkGray;
+                            Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion>>4}.{deviceAppVersion&0xF}.{deviceAppRevision}");
+                            Console.ResetColor();
                         } else {
                             throw new Exception("PropertyResponse für HardwareType war ungültig");
                         }
@@ -419,6 +512,8 @@ class Program
                     
                     //Konvertieren und abfrage können länger dauern
                     await device.Disconnect();
+                } else {
+                    Console.WriteLine("Info:  UF2 enthält keine Angaben zur Version!");
                 }
             } else {
                 Console.WriteLine("Info:  Firmware wird übertragen, egal welche Version auf dem Gerät ist.");
@@ -450,6 +545,8 @@ class Program
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine("Version Remote: " + remoteVersion);
             Console.ResetColor();
+            //TODO do it above for all commands
+            //client.ProcessChanged += ProcessChanged;
             try{
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
@@ -484,7 +581,7 @@ class Program
             return Continue();
         } else if(appNumber != deviceAppNumber)
         {
-            Console.WriteLine("Conv:  Die Applikationsnummer auf dem Gerät ist {0:X2}, die der Firmware ist {1:X2}.", deviceAppNumber, appNumber);
+            Console.WriteLine("Conv:  Die Applikationsnummer auf dem Gerät entspricht nicht der Firmware.", deviceAppNumber, appNumber);
             Console.WriteLine("       Das führt zu einem neuen Gerät, die PA ist dann 15.15.255.");
             Console.WriteLine("       Es muss komplett über die ETS neu aufgesetzt werden!");
             Console.WriteLine("       Du musst sicher sein, dass die Hardware die Firmware unterstützt, die hochgeladen wird!");
@@ -492,20 +589,18 @@ class Program
         } else if (appVersion == deviceAppVersion) {
             if(appRevision == deviceAppRevision)
             {
-                Console.WriteLine("Conv:  Die Applikationsversion auf dem Gerät ist {0:X2}, die der Firmware auch.", deviceAppVersion);
-                Console.WriteLine("       Die Applikationrevision auf dem Gerät ist {0:X2}, die der Firmware auch.", deviceAppRevision);
-                Console.WriteLine("       Die Applikation ist somit identisch.");
+                Console.WriteLine("Conv:  Die Applikationsversion auf dem Gerät und der Firmware ist identisch.", deviceAppVersion);
                 return Continue();
             }
             if(appRevision < deviceAppRevision)
             {
-                Console.WriteLine("Conv:  Die Applikationrevisionauf dem Gerät ist {0:X2}, die der Firmware ist {1:X2}.", deviceAppRevision, appRevision);
+                Console.WriteLine("Conv:  Die Applikationrevision auf dem Gerät größer als der Firmware.", deviceAppRevision, appRevision);
                 Console.WriteLine("       Das führt zu einem Downgrade!");
                 Console.WriteLine("       Das Gerät muss mit der ETS neu programmiert werden (die PA bleibt erhalten).");
                 return Continue();
             }
         } else if (appVersion < deviceAppVersion) {
-            Console.WriteLine("Conv:  Die Applikationsversion auf dem Gerät ist {0:X2}, die der Firmware ist {1:X2}.", deviceAppVersion, appVersion);
+            Console.WriteLine("Conv:  Die Applikationsversion auf dem Gerät größer als der Firmware.", deviceAppVersion, appVersion);
             Console.WriteLine("       Das führt zu einem Downgrade!");
             Console.WriteLine("       Das Gerät muss mit der ETS neu programmiert werden (die PA bleibt erhalten).");
             return Continue();
@@ -516,7 +611,7 @@ class Program
     
     private static bool Continue()
     {
-        Console.Write("Comv:  Update trotzdem durchführen? ");
+        Console.Write("Comv:  Update trotzdem durchführen? (j/n) ");
         var key = Console.ReadKey(false);
         Console.WriteLine();
         if (key.KeyChar == 'J' || key.KeyChar == 'j') {

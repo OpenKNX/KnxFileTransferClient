@@ -165,6 +165,7 @@ class Program
     static bool firstDraw = true;
     static bool canFancy = true;
     static int errorCounting = 1;
+    static int lastProgress = 0;
     private static void ProcessChanged(int progress, int speed, int timeLeft)
     {
         if(firstSpeed)
@@ -175,6 +176,7 @@ class Program
         }
         if (firstDraw)
         {
+            lastProgress = 0;
             firstDraw = false;
 
             if (canFancy)
@@ -187,8 +189,10 @@ class Program
             Console.Write(progress);
 
             Console.SetCursorPosition(11, Console.CursorTop);
-            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
-                Console.Write("=");
+            int currentProgress = ((int)Math.Floor(progress / 5.0));
+            if(currentProgress > lastProgress)
+                for (int i = 0; i < currentProgress; i++)
+                    Console.Write("=");
 
             Console.SetCursorPosition(40, Console.CursorTop);
             for (int i = 0; i < 3 - speed.ToString().Length; i++)

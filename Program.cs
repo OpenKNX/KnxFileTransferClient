@@ -248,7 +248,10 @@ class Program
     private static void PrintInfo(string info)
     {
         Console.ForegroundColor = ConsoleColor.DarkCyan;
-        Console.WriteLine("Info:  " + info);
+        Console.Write("Info:  " + info);
+        for(int i = (7+info.Length); i < 64; i++)
+            Console.Write(" ");
+        Console.WriteLine();
         Console.ResetColor();
     }
 
@@ -531,7 +534,7 @@ class Program
 
         using(MemoryStream stream = new MemoryStream())
         {
-            Console.WriteLine($"File:       wird umgewandelt und evtl komprimiert");
+            Console.WriteLine($"File:       Passe Firmware für Übertragung an...");
             long origsize = FileHandler.GetBytes(stream, args.Source); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
             await device.Connect();
             Console.WriteLine($"Size:       {origsize} Bytes\t({origsize / 1024} kB) original");

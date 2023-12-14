@@ -487,7 +487,7 @@ class Program
                             deviceOpenKnxId = res[2];
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
-                            deviceAppRevision = res[5]; //TODO check revision is here
+                            deviceAppRevision = res[5];
                             Console.ForegroundColor = ConsoleColor.DarkGray;
                             Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion>>4}.{deviceAppVersion&0xF}.{deviceAppRevision}");
                             Console.ResetColor();
@@ -509,7 +509,6 @@ class Program
                         }
                     }
 
-                    
                     //Konvertieren und abfrage können länger dauern
                     await device.Disconnect();
                 } else {
@@ -539,14 +538,6 @@ class Program
 
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
-            DateTime startTime = DateTime.Now;
-            KnxFileTransferClient.Lib.FileTransferClient client = new KnxFileTransferClient.Lib.FileTransferClient(device);
-            string remoteVersion = await client.CheckVersion();
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine("Version Remote: " + remoteVersion);
-            Console.ResetColor();
-            //TODO do it above for all commands
-            //client.ProcessChanged += ProcessChanged;
             try{
                 Stopwatch sw = new Stopwatch();
                 sw.Start();

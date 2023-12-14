@@ -58,6 +58,7 @@ class Program
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
+            client.PrintInfo += PrintInfo;
             string remoteVersion = await client.CheckVersion();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine($"Version Remote:     {remoteVersion}");
@@ -240,6 +241,13 @@ class Program
         firstDraw = true;
     }
 
+    private static void PrintInfo(string info)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.WriteLine("Info:  " + info);
+        Console.ResetColor();
+    }
+
     private static int help()
     {
         Arguments args = new Arguments();
@@ -357,11 +365,8 @@ class Program
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
         await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"));
-        sw.Stop();
-        Console.WriteLine($"Info:  Datei hochladen abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}");
+        Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
     private static async Task download(Arguments args)
@@ -376,11 +381,8 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Datei runterladen - von " + args.Source + " in " + args.Target);
-        Stopwatch sw = new Stopwatch();
-        sw.Start();
         await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"));
-        sw.Stop();
-        Console.WriteLine("Info:  Datei runterladen abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}");
+        Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
     private static async Task delete(Arguments args)
@@ -539,11 +541,7 @@ class Program
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
             try{
-                Stopwatch sw = new Stopwatch();
-                sw.Start();
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
-                sw.Stop();
-                Console.WriteLine($"Info:  Übertragung abgeschlossen in {sw.Elapsed.Minutes:D2}:{sw.Elapsed.Seconds:D2}                      ");
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
                 return;

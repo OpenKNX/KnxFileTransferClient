@@ -601,7 +601,6 @@ class Program
             {
                 Console.WriteLine("Conv:  Die Applikationrevision auf dem Gerät größer als der Firmware.", deviceAppRevision, appRevision);
                 Console.WriteLine("       Das führt zu einem Downgrade!");
-                Console.WriteLine("       Das Gerät muss mit der ETS neu programmiert werden (die PA bleibt erhalten).");
                 return Continue();
             }
         } else if (appVersion < deviceAppVersion) {

@@ -492,11 +492,20 @@ class Program
                     try
                     {
                         byte[] res = await device.PropertyRead(0, 78);
-                        if (res.Length > 0) {
+                        if (res.Length == 6) {
                             deviceOpenKnxId = res[2];
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
-                            deviceAppRevision = res[5];
+
+                            
+                            res = await device.PropertyRead(0, 25);
+                            if(res.Length == 2)
+                            {
+                                deviceAppRevision = (uint)(res[0] >> 3);
+                            } else {
+                                throw new Exception("PropertyResponse für Version war ungültig");
+                            }
+
                             Console.ForegroundColor = ConsoleColor.DarkGray;
                             Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion>>4}.{deviceAppVersion&0xF}.{deviceAppRevision}");
                             Console.ResetColor();

@@ -1,4 +1,5 @@
-﻿using System.Reflection.Metadata;
+﻿using System.Diagnostics;
+using System.Reflection.Metadata;
 using System.Text;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
@@ -57,6 +58,7 @@ class Program
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
+            client.PrintInfo += PrintInfo;
             string remoteVersion = await client.CheckVersion();
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.WriteLine($"Version Remote:     {remoteVersion}");
@@ -163,6 +165,7 @@ class Program
     static bool firstDraw = true;
     static bool canFancy = true;
     static int errorCounting = 1;
+    static int lastProgress = 0;
     private static void ProcessChanged(int progress, int speed, int timeLeft)
     {
         if(firstSpeed)
@@ -173,6 +176,7 @@ class Program
         }
         if (firstDraw)
         {
+            lastProgress = 0;
             firstDraw = false;
 
             if (canFancy)
@@ -185,8 +189,10 @@ class Program
             Console.Write(progress);
 
             Console.SetCursorPosition(11, Console.CursorTop);
-            for (int i = 0; i < ((int)Math.Floor(progress / 5.0)); i++)
-                Console.Write("=");
+            int currentProgress = ((int)Math.Floor(progress / 5.0));
+            if(currentProgress > lastProgress)
+                for (int i = 0; i < currentProgress; i++)
+                    Console.Write("=");
 
             Console.SetCursorPosition(40, Console.CursorTop);
             for (int i = 0; i < 3 - speed.ToString().Length; i++)
@@ -237,6 +243,16 @@ class Program
             Console.WriteLine(ex.StackTrace);
         Console.ResetColor();
         firstDraw = true;
+    }
+
+    private static void PrintInfo(string info)
+    {
+        Console.ForegroundColor = ConsoleColor.DarkCyan;
+        Console.Write("Info:  " + info);
+        for(int i = (7+info.Length); i < 64; i++)
+            Console.Write(" ");
+        Console.WriteLine();
+        Console.ResetColor();
     }
 
     private static int help()
@@ -356,9 +372,8 @@ class Program
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
-
         await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"));
-        Console.WriteLine("Info:  Datei hochladen abgeschlossen");
+        Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
     private static async Task download(Arguments args)
@@ -477,11 +492,20 @@ class Program
                     try
                     {
                         byte[] res = await device.PropertyRead(0, 78);
-                        if (res.Length > 0) {
+                        if (res.Length == 6) {
                             deviceOpenKnxId = res[2];
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
-                            deviceAppRevision = res[5]; //TODO check revision is here
+
+                            
+                            res = await device.PropertyRead(0, 25);
+                            if(res.Length == 2)
+                            {
+                                deviceAppRevision = (uint)(res[0] >> 3);
+                            } else {
+                                throw new Exception("PropertyResponse für Version war ungültig");
+                            }
+
                             Console.ForegroundColor = ConsoleColor.DarkGray;
                             Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion>>4}.{deviceAppVersion&0xF}.{deviceAppRevision}");
                             Console.ResetColor();
@@ -503,7 +527,6 @@ class Program
                         }
                     }
 
-                    
                     //Konvertieren und abfrage können länger dauern
                     await device.Disconnect();
                 } else {
@@ -520,7 +543,7 @@ class Program
 
         using(MemoryStream stream = new MemoryStream())
         {
-            Console.WriteLine($"File:       wird umgewandelt und evtl komprimiert");
+            Console.WriteLine($"File:       Passe Firmware für Übertragung an...");
             long origsize = FileHandler.GetBytes(stream, args.Source); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
             await device.Connect();
             Console.WriteLine($"Size:       {origsize} Bytes\t({origsize / 1024} kB) original");
@@ -533,7 +556,6 @@ class Program
 
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
-            DateTime startTime = DateTime.Now;
             try{
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
             } catch {
@@ -541,7 +563,7 @@ class Program
                 return;
             }
 
-            Console.WriteLine("Info:  Übertragung abgeschlossen. Gerät wird neu gestartet     ");
+            Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/firmware.bin" + char.MinValue));
         }
     }
@@ -579,7 +601,6 @@ class Program
             {
                 Console.WriteLine("Conv:  Die Applikationrevision auf dem Gerät größer als der Firmware.", deviceAppRevision, appRevision);
                 Console.WriteLine("       Das führt zu einem Downgrade!");
-                Console.WriteLine("       Das Gerät muss mit der ETS neu programmiert werden (die PA bleibt erhalten).");
                 return Continue();
             }
         } else if (appVersion < deviceAppVersion) {

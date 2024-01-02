@@ -28,7 +28,8 @@ class Program
         Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
         Console.ResetColor();
 
-        arguments = new Arguments(args);
+        arguments = new Arguments();
+        await arguments.Init(args);
         if(arguments.Command == "help")
             return help();
         
@@ -36,7 +37,7 @@ class Program
         catch { canFancy = false; }
 
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.Get<bool>("routing") ? " (Multicast)" : ""));
+        Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.IsRouting ? " (Multicast)" : ""));
         Console.WriteLine($"IP-Port:    {arguments.Get<int>("port")}");
         Console.WriteLine($"PA:         {arguments.PhysicalAddress}");
         Console.WriteLine();
@@ -45,7 +46,7 @@ class Program
 
         try
         {
-            if(arguments.Get<bool>("routing"))
+            if(arguments.IsRouting)
                 conn = new Kaenx.Konnect.Connections.KnxIpRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else
                 conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
@@ -73,7 +74,8 @@ class Program
                     Console.WriteLine("Info:  Neuen Befehl eingeben:");
                     string args3 = Console.ReadLine() ?? "";
                     string[] args2 = args3.Split(" ");
-                    arguments = new Arguments(args2, true);
+                    arguments = new Arguments();
+                    await arguments.Init(args2, true);
                     await device.Connect();
                 }
 

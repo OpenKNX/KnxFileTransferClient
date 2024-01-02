@@ -262,7 +262,7 @@ class Program
         Arguments args = new Arguments();
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"KnxFileTransferClient <Command> <Source?> <Target?>");
+        Console.WriteLine($"KnxFileTransferClient <Befehl> <Quelle?> <Ziel?>");
 
         Console.Write($"               ");
         foreach(Argument arg in args.GetArguments())
@@ -275,14 +275,14 @@ class Program
         Console.ResetColor();
         Console.WriteLine($"In Session:");
         Console.ForegroundColor = ConsoleColor.Yellow;
-        Console.WriteLine($"<Command> <Source?> <Target?>");
+        Console.WriteLine($"<Befehl> <Quelle?> <Ziel?>");
         Console.ResetColor();
         Console.WriteLine();
-        Console.WriteLine("Command:         Command to execute");
+        Console.WriteLine("Befehl:          Folgende Befehle sind vorhanden");
         Console.WriteLine("                 format/exists/rename/list/mkdir/rmdir/open/close");
         Console.WriteLine("                 upload/download/fwupdate/delete");
-        Console.WriteLine("Source*:         Path to the file on the host");
-        Console.WriteLine("Target**:        Path to the file on the knx device");
+        Console.WriteLine("Quelle*:         Pfad zur Datei auf dem Host");
+        Console.WriteLine("Ziel**:          Pfad zur Datei auf dem KNX-Gerät");
 
         int maxLength = 17;
 
@@ -301,11 +301,11 @@ class Program
 
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("*  only at command upload/download");
-        Console.WriteLine("** only at command exists/rename/upload/download/list/mkdir/rmdir");
+        Console.WriteLine("*  nur bei Befehl upload/download");
+        Console.WriteLine("** nur bei Befehl exists/rename/upload/download/list/mkdir/rmdir");
         Console.WriteLine();
-        Console.WriteLine("Open  = Session Start");
-        Console.WriteLine("Close = Session End");
+        Console.WriteLine("Open  = Session Öffnen");
+        Console.WriteLine("Close = Session Beenden");
         Console.ResetColor();
         return 0;
     }

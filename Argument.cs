@@ -14,16 +14,14 @@ internal class Argument
 
     public enum ConnectionType
     {
-        Search,
-        Auto,
-        Tunneling,
-        Routing
+        search,
+        auto,
+        tunneling,
+        routing
     }
 
     public string Name { get; set; }
     public string Display { get; set; }
-    public string Question { get; set; } = "";
-    public string Regex { get; set; } = "";
     public object Value { get; set; }
     public ArgumentType Type { get; set; }
     public bool WasSet { get; set; } = false;

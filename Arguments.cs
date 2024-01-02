@@ -7,18 +7,18 @@ namespace KnxFileTransferClient;
 internal class Arguments{
     
     private static List<Argument> arguments = new List<Argument> {
-        new("delay", "Delay", Argument.ArgumentType.Int, 0),
-        new("pkg", "Package Size", Argument.ArgumentType.Int, 128),
-        new("force", "Force", Argument.ArgumentType.Bool, false),
-        new("connect", "Verbindung", Argument.ArgumentType.Enum, Argument.ConnectionType.Search),
+        new("delay", "Verzögerung", Argument.ArgumentType.Int, 0),
+        new("pkg", "Telegrammgröße", Argument.ArgumentType.Int, 128),
+        new("force", "Erzwingen", Argument.ArgumentType.Bool, false),
+        new("connect", "Verbindung", Argument.ArgumentType.Enum, Argument.ConnectionType.search),
         new("verbose", "Verbose", Argument.ArgumentType.Bool, false),
-        new("pa", "Physical Address", Argument.ArgumentType.String, "1.1.255", true) { Question = "PA des Geräts", Regex = @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$"},
+        new("pa", "Physikalische Adresse", Argument.ArgumentType.String, "1.1.255", true),
         new("port", "Port", Argument.ArgumentType.Int, 3671),
         new("gw", "Gateway IP", Argument.ArgumentType.String, "192.168.178.2", true),
         new("ga", "Gateway PA", Argument.ArgumentType.String, "1.1.0", true),
         new("gs", "Routing Source Address", Argument.ArgumentType.String, "0.0.1", true),
         new("config", "Konfigurationsname", Argument.ArgumentType.String, ""),
-        new("interactive", "All arguments need to be set by user", Argument.ArgumentType.Bool, false)
+        new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false)
     };
 
     public UnicastAddress? PhysicalAddress { get; private set; } = null;
@@ -27,7 +27,7 @@ internal class Arguments{
     public string Target { get; private set; } = "";
     public string Command { get; private set; } = "";
     public bool IsRouting { get; private set; } = false;
-    private static readonly List<string> toSave = new() { "connect", "port", "gw", "ga", "gs", "pkg", "delay" };
+    private static readonly List<string> toSave = new() { "connect", "pa", "port", "gw", "ga", "gs", "pkg", "delay" };
 
     public async Task Init(string[] args, bool isOpen = false)
     {
@@ -60,32 +60,32 @@ internal class Arguments{
                     arg.WasSet = false;
 
             if(!GetRaw("pa").WasSet)
-                GetInputArg("pa", "PA des Update-Geräts", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
+                GetInputArg("pa", "PA des Geräts", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
 
             if(!GetRaw("connect").WasSet)
             {
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine("(Auto|Search|Tunneling|Routing)");
                 Console.ResetColor();
-                GetInputArg("connect", "Verbindungstyp: ", @"(Auto|Search|Tunneling|Routing)");
+                GetInputArg("connect", "Verbindungstyp: ", @"(auto|search|tunneling|routing)");
             }
 
             switch(Get<Argument.ConnectionType>("connect"))
             {
-                case Argument.ConnectionType.Auto:
+                case Argument.ConnectionType.auto:
                     await SearchGateways(true);
                     break;
 
-                case Argument.ConnectionType.Search:
+                case Argument.ConnectionType.search:
                     await SearchGateways();
                     break;
 
-                case Argument.ConnectionType.Tunneling:
+                case Argument.ConnectionType.tunneling:
                     if(!GetRaw("gw").WasSet)
                         GetInputArg("gw", "IP-Adresse der Schnittstelle", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                     break;
 
-                case Argument.ConnectionType.Routing:
+                case Argument.ConnectionType.routing:
                     if(!GetRaw("gw").WasSet)
                         GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                     if(!GetRaw("ga").WasSet)
@@ -287,6 +287,12 @@ internal class Arguments{
                         arg.Value = argL[index + 1];
                         break;
                     }
+
+                    case Argument.ArgumentType.Enum:
+                    {
+                        arg.Value = (Argument.ConnectionType)Enum.Parse<Argument.ConnectionType>(argL[index + 1].ToLower());
+                        break;
+                    }
                 }
             }
 
@@ -320,7 +326,7 @@ internal class Arguments{
             }
             Console.ResetColor();
 
-            answer = Console.ReadLine();
+            answer = Console.ReadLine().ToLower();
             if(string.IsNullOrEmpty(answer))
                 answer = arg.Value.ToString();
         } while(!CheckInput(answer, regex));

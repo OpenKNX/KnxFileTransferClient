@@ -10,7 +10,7 @@ It can also list all content of a directory or create/delete one.
 
 
 ## Requirements
-You will have to use the [FtpServer](https://github.com/OpenKnx/OFM-FtpServer).  
+You will have to use the [OFM-FileTransferModule](https://github.com/OpenKNX/OFM-FileTransferModule).  
 
 ## Speed
 On an empty Bus we can get up to 570 Bytes/s.  

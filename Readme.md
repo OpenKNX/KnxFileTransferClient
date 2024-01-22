@@ -1,3 +1,8 @@
+![Issues](https://badgen.net/github/open-issues/OpenKNX/KnxFileTransferClient)
+![Branches](https://badgen.net/github/branches/OpenKNX/KnxFileTransferClient)
+![Release](https://badgen.net/github/release/OpenKNX/KnxFileTransferClient)
+[![CodeFactor](https://www.codefactor.io/repository/github/openknx/KnxFileTransferClient/badge)](https://www.codefactor.io/repository/github/openknx/KnxFileTransferClient)
+
 # KnxFileTransferClient
 
 This console app is uploading/downloading files to the filesystem of your knx-device.  

@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
+using System;
+using System.Reflection;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;
@@ -10,6 +12,28 @@ namespace KnxFileTransferClient;
 
 class Program
 {    
+    static void PrintOpenKNXHeader(string addCustomText = null, ConsoleColor customTextColor = ConsoleColor.Green)
+    {
+        Console.WriteLine();
+        Console.Write("Open ");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("■");
+        Console.ResetColor();
+        string unicodeString = $"{(char)0x252C}{(char)0x2500}{(char)0x2500}{(char)0x2500}{(char)0x2500}{(char)0x2534} ";
+        Console.Write($"{unicodeString} ");
+        if (addCustomText != null) {
+            if (customTextColor != null) {
+                Console.ForegroundColor = customTextColor;
+            }
+            Console.WriteLine($"{addCustomText}");
+            Console.ResetColor();
+        }
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.Write("■");
+        Console.ResetColor();
+        Console.WriteLine(" KNX");
+        Console.WriteLine();
+    }
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice device = null;
     private static FileTransferClient client = null;
@@ -18,18 +42,30 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("Willkommen zum KnxFileTransferClient!!");
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.DarkGray;
-        Version? version = typeof(Program).Assembly.GetName().Version;
-        if(version != null)
-            Console.WriteLine($"Version Client:     {version.Major}.{version.Minor}.{version.Build}");
-        Console.WriteLine($"Version Client.Lib: {KnxFileTransferClient.Lib.FileTransferClient.GetVersionMajor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionMinor()}.{KnxFileTransferClient.Lib.FileTransferClient.GetVersionBuild()}");
-        Console.ResetColor();
+        //Console.ForegroundColor = ConsoleColor.Green;
+        //Console.WriteLine("Willkommen zum KnxFileTransferClient!!");
+        //Console.WriteLine();
+        PrintOpenKNXHeader("KnxFileTransferClient");
 
+        //Print the client version of the client and the lib
+        Console.ForegroundColor = ConsoleColor.DarkGray;
+        System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
+        if(clientVersion != null) {
+            Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
+        }
+        // Get the custom library attributes
+        Assembly libAssembly = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly;
+        
+        System.Version? libVersion = new Version(libAssembly.GetCustomAttributes<AssemblyMetadataAttribute>()
+          .FirstOrDefault(attr => attr.Key == "LibVersion")?.Value);
+        if (libAssembly != null && libVersion != null)
+        {
+          Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}");
+        }
+        Console.ResetColor();
         arguments = new Arguments();
         await arguments.Init(args);
+        if(arguments.Command == "version") return 0; // The version is requested, so exit with 0
         if(arguments.Command == "help")
             return help();
         
@@ -81,6 +117,9 @@ class Program
 
                 switch(arguments.Command)
                 {
+                    case "version":
+                        code = 0;
+                        break;
                     case "help":
                         code = help();
                         break;
@@ -359,7 +398,7 @@ class Program
         if(await client.Exists(args.Target))
         {
             Console.WriteLine("       Die Datei existiert bereits.");
-            Console.Write("       Datei löschen? (J/Y): ");
+            Console.Write("       Datei löschen? (J/N): ");  // Yes/No or Ja/Nein but not Ja/Yes nor J/Y!
             await device.Disconnect();
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)

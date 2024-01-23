@@ -41,7 +41,7 @@ internal class Arguments{
         else
             Command = "help";
 
-        if(Command == "close" || Command == "help")
+        if(Command == "close" || Command == "help" || Command == "version")
             return;
 
         if(isOpen)
@@ -132,23 +132,38 @@ internal class Arguments{
     private async Task SearchGateways(bool isAuto = false)
     {
         List<Connection> gateways = new();
-        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671, true);
+        HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
+        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new("224.0.23.12", 3671, true);
         int counter = 1;
-        tunnel.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) => {
-            if(message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))
+        object lockObject = new object(); // Object for synchronization
+
+        tunnel.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) =>
+        {
+          string phAddrString = message.PhAddr.ToString();
+          lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
+          {
+            if (uniquePhysicalAddresses.Add(phAddrString)) // Add returns true if the item was added, else false because it already exists in the HashSet (which means we already have a gateway with this physical address)
             {
-                Console.WriteLine($"{counter++:D2} Tunneling -> {message.Endpoint.ToString()} \t({message.PhAddr}) [{message.FriendlyName}]");
-                gateways.Add(new() { IPAddress = message.Endpoint, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr});
+              if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))
+              {
+                // ,2 instead of :D2, because the customer do not need to enter the trailing 0. thefore we do not need to show it, but keep the formatting
+                Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
+
+                gateways.Add(new() { IPAddress = message.Endpoint, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr });
+                counter++; // Increase counter here, because we want to count also gateways that support tunneling.
+              }
+              if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
+              {
+                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
+                gateways.Add(new() { IsRouting = true, IPAddress = message.Multicast, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr });
+                counter++; // Increase counter here, because we want to count gateways that support tunneling. Which could be also a routing gateway
+              }
             }
-            if(message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
-            {
-                Console.WriteLine($"{counter++:D2} Routing   -> {message.Multicast.ToString()} \t({message.PhAddr}) [{message.FriendlyName}]");
-                gateways.Add(new() { IsRouting = true, IPAddress = message.Multicast, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr});
-            }
+          }
         };
         await tunnel.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
 
-        await Task.Delay(4000);
+        await Task.Delay(4000); // Wait for responses to come in 
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
 
         string phaddr = Get<string>("pa");

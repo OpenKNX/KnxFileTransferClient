@@ -1,8 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection.Metadata;
 using System.Text;
-using System;
-using System.Reflection;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;

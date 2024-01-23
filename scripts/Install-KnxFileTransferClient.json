@@ -1,0 +1,43 @@
+{
+  "Applications": [
+    {
+      "Name": "KnxFileTransferClient",
+      "Windows": {
+        "x86": {
+          "FilesAndFolders": {
+            "OpenKNXProducer": {
+              "SourcePath": "tools\\Windows\\KnxFileTransferClient-x86.exe",
+              "DestinationPath": "$env:USERPROFILE\\bin\\KnxFileTransferClient.exe"
+            }
+          }
+        },
+        "x64": {
+          "FilesAndFolders": {
+            "OpenKNXProducer": {
+              "SourcePath": "tools\\Windows\\KnxFileTransferClient-x64.exe",
+              "DestinationPath": "$env:USERPROFILE\\bin\\KnxFileTransferClient.exe"
+            }
+          }
+        }
+      },
+      "MacOS": { 
+        "FilesAndFolders": {
+          "OpenKNXProducer": {
+            "SourcePath": "tools/MacOS/KnxFileTransferClient",
+            "DestinationPath": "/usr/local/bin/KnxFileTransferClient"
+          }
+        },
+        "ExecuteCommand1": "chmod +x /usr/local/bin/KnxFileTransferClient"
+      },
+      "Linux": {
+        "FilesAndFolders": {
+          "OpenKNXProducer": {
+            "SourcePath": "tools/Linux/KnxFileTransferClient",
+            "DestinationPath": "/usr/local/bin/KnxFileTransferClient"
+          }
+        },
+        "ExecuteCommand1": "chmod +x /usr/local/bin/KnxFileTransferClient"
+      }
+    }
+  ]
+}

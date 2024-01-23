@@ -181,6 +181,7 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
+            Finish();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
@@ -189,16 +190,20 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
+            Finish();
             return -1;
         }
 
+        Finish();
+        return code;
+    }
+
+    private void Finish()
+    {
         if(device != null)
             await device.Disconnect();
         if(conn != null)
             await conn.Disconnect();
-
-
-        return code;
     }
 
 

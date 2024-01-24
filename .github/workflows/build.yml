@@ -21,7 +21,7 @@ jobs:
       run: cd restore
       
     - name: Run run Restore-Dependencies script
-      run: pwsh Restore-Dependencies.ps1 -Verbose
+      run: pwsh ./Restore-Dependencies.ps1 -Verbose
 
     - name: Go back to build directory
       run: cd ..

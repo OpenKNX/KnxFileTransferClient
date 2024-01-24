@@ -196,12 +196,12 @@ class Program
         return code;
     }
 
-    private void Finish()
+    private static void Finish()
     {
-        if(device != null)
-            await device.Disconnect();
-        if(conn != null)
-            await conn.Disconnect();
+        if (device != null)
+            device.Disconnect().Wait();  // Use .Wait() to synchronously wait for completion. Deadlocks uncritical here, because the program is exiting anyway. 
+        if (conn != null)
+            conn.Disconnect().Wait();
     }
 
 

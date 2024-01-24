@@ -18,10 +18,26 @@
             "stopAtEntry": false
         },
         {
+          // Use IntelliSense to find out which attributes exist for C# debugging
+          // Use hover for the description of the existing attributes
+          // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+          "name": "Test list /",
+          "type": "coreclr",
+          "request": "launch",
+          "preLaunchTask": "build",
+          // If you have changed target frameworks, make sure to update the program path.
+          "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+          "args": ["list", "/"],
+          "cwd": "${workspaceFolder}",
+          // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+          "console": "integratedTerminal",
+          "stopAtEntry": false
+        },
+        {
             // Use IntelliSense to find out which attributes exist for C# debugging
             // Use hover for the description of the existing attributes
             // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-            "name": "Test Update",
+            "name": "Test fwupdate",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
@@ -32,6 +48,27 @@
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "integratedTerminal",
             "stopAtEntry": false
+        },
+        {
+          // Use IntelliSense to find out which attributes exist for C# debugging
+          // Use hover for the description of the existing attributes
+          // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+          "name": "Test fwupdate LogicModule PiPicoW",
+          "type": "coreclr",
+          "request": "launch",
+          "preLaunchTask": "build",
+          // If you have changed target frameworks, make sure to update the program path.
+          "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+          "args": [
+            "fwupdate", "../OAM-LogicModule/.pio/build/release_OKNXHW_REG2_PiPico_W/firmware.uf2", 
+            "--verbose",
+            "--no-input",
+            "--pkg 52"
+          ],
+          "cwd": "${workspaceFolder}",
+          // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+          "console": "integratedTerminal",
+          "stopAtEntry": false
         },
         {
             // Use IntelliSense to find out which attributes exist for C# debugging

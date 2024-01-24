@@ -277,6 +277,6 @@ Move-Item "$ReleaseName" release/
 Write-Host "`t✔ Done" -ForegroundColor Green
 
 # Clean working dir
-Remove-Item -Recurse -Force release/*
+#Remove-Item -Recurse -Force release/* # Commented out for testing. Also comment out the line Move-Item "$ReleaseName" release/ above
 OpenKNX_ShowLogo "Finished Build $($OpenKNX_ToolName) Release."
 

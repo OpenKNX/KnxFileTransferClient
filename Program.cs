@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
-using System.Reflection.Metadata;
 using System.Text;
+using System;
+using System.Reflection;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;
@@ -179,7 +180,6 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
@@ -188,20 +188,16 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
             return -1;
         }
 
-        Finish();
-        return code;
-    }
-
-    private void Finish()
-    {
         if(device != null)
             await device.Disconnect();
         if(conn != null)
             await conn.Disconnect();
+
+
+        return code;
     }
 
 

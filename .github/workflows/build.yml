@@ -1,4 +1,4 @@
-name: Build
+ecπππname: Build
 
 on: [push]
 
@@ -17,14 +17,9 @@ jobs:
       with:
         dotnet-version: '7.0'
 
-    - name: Set restore directory
-      run: cd restore
-      
-    - name: Run run Restore-Dependencies script
-      run: pwsh ./Restore-Dependencies.ps1 -Verbose
+    - name: Run Restore-Dependencies script
+      run: pwsh -Command "Start-Process pwsh -ArgumentList '-File','$PWD/restore/Restore-Dependencies.ps1','-Verbose' -WorkingDirectory $PWD/restore"
 
-    - name: Go back to build directory
-      run: cd ..
     - name: Run Build-Release
       run: pwsh scripts/Build-Release.ps1 -Verbose
 

@@ -1,3 +1,3 @@
 ------- Built with -------
-48f5832 master lib/Kaenx-Konnect https://github.com/OpenKNX/Kaenx-Konnect.git
-234eed0 master lib/KnxFileTransferClient.Lib https://github.com/OpenKNX/KnxFileTransferClient.Lib.git
+48f5832 CrossOS lib/Kaenx-Konnect https://github.com/OpenKNX/Kaenx-Konnect.git
+234eed0 CrossOS lib/KnxFileTransferClient.Lib https://github.com/OpenKNX/KnxFileTransferClient.Lib.git

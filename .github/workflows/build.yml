@@ -1,5 +1,4 @@
-ecπππname: Build
-
+name: Build
 on: [push]
 
 jobs:

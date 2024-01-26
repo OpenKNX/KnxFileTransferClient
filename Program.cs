@@ -7,14 +7,12 @@ using KnxFileTransferClient.Lib;
 
 namespace KnxFileTransferClient;
 
-
 class Program
 {    
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice device = null;
     private static FileTransferClient client = null;
     private static Arguments arguments;
-
 
     static async Task<int> Main(string[] args)
     {
@@ -166,7 +164,6 @@ class Program
         if(conn != null)
             await conn.Disconnect();
     }
-
 
     static bool firstSpeed = true;
     static bool firstDraw = true;
@@ -480,7 +477,6 @@ class Program
                 break;
         }
 
-
         if(extension == ".uf2")
         {
             if(!args.Get<bool>("force"))
@@ -504,7 +500,6 @@ class Program
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
 
-                            
                             res = await device.PropertyRead(0, 25);
                             if(res.Length == 2)
                             {
@@ -522,7 +517,6 @@ class Program
 
                         if(!CheckApplication(infoTag, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision))
                             return;
-
                     }
                     catch (Exception ex)
                     {
@@ -545,9 +539,6 @@ class Program
             }
         }
         
-
-
-
         using(MemoryStream stream = new MemoryStream())
         {
             Console.WriteLine($"File:       Passe Firmware für Übertragung an...");
@@ -574,8 +565,6 @@ class Program
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/firmware.bin" + char.MinValue));
         }
     }
-
-
     
     private static bool CheckApplication(Tag tag, uint deviceOpenKnxId,  uint deviceAppNumber, uint deviceAppVersion, uint deviceAppRevision)
     {
@@ -631,6 +620,4 @@ class Program
         }
         return false;
     }
-
-
 }

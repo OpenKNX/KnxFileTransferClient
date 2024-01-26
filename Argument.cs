@@ -1,5 +1,3 @@
-
-
 namespace KnxFileTransferClient;
 
 internal class Argument
@@ -10,7 +8,7 @@ internal class Argument
         String,
         Bool,
         Enum
-    };
+    }
 
     public enum ConnectionType
     {

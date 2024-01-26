@@ -1,9 +1,6 @@
-
-
 using System.IO.Compression;
 
 namespace KnxFileTransferClient;
-
 
 public class Converter
 {
@@ -11,7 +8,6 @@ public class Converter
     private static uint UF2_MAGIC_START0 = 0x0A324655;
     private static uint UF2_MAGIC_START1 = 0x9E5D5157;
     private static uint UF2_MAGIC_END = 0x0AB16F30;
-
 
     public static List<Tag> GetTags(string path)
     {
@@ -75,7 +71,6 @@ public class Converter
                 counter++;
             } while(block.Sequence < block.BlockCount -1);
 
-            
             ms.Flush();
             return ms.ToArray();
         }
@@ -151,7 +146,6 @@ public class Converter
             }
         }
 
-
         return output;
     }
 
@@ -174,7 +168,6 @@ public class Block
     public bool FlagMD5 { get; set; }
     public bool FlagExtensionTags { get; set; }
 
-
     public uint Address { get; set; }
     public uint Size { get; set; }
     public uint BlockCount { get; set; }
@@ -188,7 +181,6 @@ public class Block
 
     public List<Tag> Tags { get; set; } = new List<Tag>();
 
-    
     public string FamilyName
     {
         get {

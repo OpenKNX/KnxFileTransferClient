@@ -140,7 +140,7 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
+            await Finish();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
@@ -149,15 +149,15 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
+            await Finish();
             return -1;
         }
 
-        Finish();
+        await Finish();
         return code;
     }
 
-    private void Finish()
+    private static async Task Finish()
     {
         if(device != null)
             await device.Disconnect();

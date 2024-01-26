@@ -131,7 +131,7 @@ internal class Arguments{
     private async Task SearchGateways(bool isAuto = false)
     {
         List<Connection> gateways = new();
-        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671, true);
+        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671);
         int counter = 1;
         tunnel.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) => {
             if(message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))

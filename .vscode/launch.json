@@ -11,7 +11,7 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
-            "args": ["list", "/"],
+            "args": ["list", "/", "--connect", "Tunneling", "--pa", "1.1.8", "--gw", "192.168.178.77"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "integratedTerminal",

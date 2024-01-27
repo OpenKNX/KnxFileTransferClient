@@ -51,9 +51,25 @@ class Program
 
             await conn.Connect();
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Max-APDU:           {conn.MaxFrameLength}");
+            if((arguments.Get<int>("pkg") - 3) > conn.MaxFrameLength && !arguments.Get<bool>("force"))
+            {
+                Console.WriteLine($"Package:            {arguments.Get<int>("pkg")}");
+                throw new Exception("Max-APDU des Gerätes wurde überschritten!");
+            }
+            Console.ResetColor();
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             await device.Connect();
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            Console.ForegroundColor = ConsoleColor.DarkGray;
+            Console.WriteLine($"Max-APDU:           {device.MaxFrameLength}");
+            if((arguments.Get<int>("pkg") - 3) > device.MaxFrameLength && !arguments.Get<bool>("force"))
+            {
+                Console.WriteLine($"Package:            {arguments.Get<int>("pkg")}");
+                throw new Exception("Max-APDU des Gerätes wurde überschritten!");
+            }
+            Console.ResetColor();
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;

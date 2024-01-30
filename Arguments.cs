@@ -133,7 +133,7 @@ internal class Arguments{
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
-        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new("224.0.23.12", 3671, true);
+        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671, true);
         int counter = 1;
         object lockObject = new object(); // Object for synchronization
 

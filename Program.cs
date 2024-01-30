@@ -113,9 +113,6 @@ class Program
 
                 switch(arguments.Command)
                 {
-                    case "version":
-                        code = 0;
-                        break;
                     case "help":
                         code = help();
                         break;
@@ -177,7 +174,7 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
+            await Finish();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
@@ -186,20 +183,20 @@ class Program
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
             Console.ResetColor();
-            Finish();
+            await Finish();
             return -1;
         }
 
-        Finish();
+        await Finish();
         return code;
     }
 
-    private static void Finish()
+    private static async Task Finish()
     {
         if (device != null)
-            device.Disconnect().Wait();  // Use .Wait() to synchronously wait for completion. Deadlocks uncritical here, because the program is exiting anyway. 
+            await device.Disconnect();  // Use .Wait() to synchronously wait for completion. Deadlocks uncritical here, because the program is exiting anyway. 
         if (conn != null)
-            conn.Disconnect().Wait();
+            await conn.Disconnect();
     }
 
     static bool firstSpeed = true;

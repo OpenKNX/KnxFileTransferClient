@@ -5,7 +5,6 @@ using Kaenx.Konnect.Addresses;
 namespace KnxFileTransferClient;
 
 internal class Arguments{
-    
     private static List<Argument> arguments = new List<Argument> {
         new("delay", "Verzögerung", Argument.ArgumentType.Int, 0),
         new("pkg", "Telegrammgröße", Argument.ArgumentType.Int, 128),
@@ -345,7 +344,6 @@ internal class Arguments{
             if(string.IsNullOrEmpty(answer))
                 answer = arg.Value.ToString();
         } while(!CheckInput(answer, regex));
-
 
         bool response = false;
 

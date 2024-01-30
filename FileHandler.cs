@@ -2,7 +2,6 @@ using System.IO.Compression;
 
 namespace KnxFileTransferClient;
 
-
 internal class FileHandler
 {
     public static long GetBytes(MemoryStream result, string path)

@@ -1,0 +1,3 @@
+------- Built with -------
+127bc7f CrossOS lib/Kaenx-Konnect https://github.com/OpenKNX/Kaenx-Konnect.git
+1db3a9e CrossOS lib/KnxFileTransferClient.Lib https://github.com/OpenKNX/KnxFileTransferClient.Lib.git

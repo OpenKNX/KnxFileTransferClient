@@ -43,6 +43,12 @@ internal class Arguments{
         if(Command == "close" || Command == "help" || Command == "version")
             return;
 
+        if(Command == "upload" || Command == "fwupdate")
+        {
+            if(!System.IO.File.Exists(argL[1]))
+                throw new Exception($"Quelldatei existiert nicht. ({argL[1]})");
+        }
+
         if(isOpen)
         {
             if(argL.Count > 1)

@@ -39,9 +39,6 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
-        //Console.ForegroundColor = ConsoleColor.Green;
-        //Console.WriteLine("Willkommen zum KnxFileTransferClient!!");
-        //Console.WriteLine();
         PrintOpenKNXHeader("KnxFileTransferClient");
 
         //Print the client version of the client and the lib
@@ -61,7 +58,16 @@ class Program
         }
         Console.ResetColor();
         arguments = new Arguments();
-        await arguments.Init(args);
+        try{
+            await arguments.Init(args);
+        } catch(Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error: " + ex.Message);
+            Console.ResetColor();
+            await Finish();
+            return -1;
+        }
         if(arguments.Command == "version") return 0; // The version is requested, so exit with 0
         if(arguments.Command == "help")
             return help();
@@ -79,12 +85,6 @@ class Program
 
         try
         {
-            if(arguments.Command == "upload" || arguments.Command == "fwupdate")
-            {
-                if(!System.IO.File.Exists(arguments.Source))
-                    throw new Exception("Quelldatei existiert nicht.");
-            }
-
             if(arguments.IsRouting)
                 conn = new Kaenx.Konnect.Connections.KnxIpRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else

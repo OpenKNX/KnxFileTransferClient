@@ -79,6 +79,12 @@ class Program
 
         try
         {
+            if(arguments.Command == "upload" || arguments.Command == "fwupdate")
+            {
+                if(!System.IO.File.Exists(arguments.Source))
+                    throw new Exception("Quelldatei existiert nicht.");
+            }
+
             if(arguments.IsRouting)
                 conn = new Kaenx.Konnect.Connections.KnxIpRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else

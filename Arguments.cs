@@ -162,7 +162,7 @@ internal class Arguments{
         };
         await tunnel.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
 
-        await Task.Delay(4000); // Wait for responses to come in 
+        await Task.Delay(1000); // Wait for responses to come in 
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
 
         string phaddr = Get<string>("pa");

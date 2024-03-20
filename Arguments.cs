@@ -66,7 +66,7 @@ internal class Arguments{
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine("(Auto|Search|Tunneling|Routing)");
                 Console.ResetColor();
-                GetInputArg("connect", "Verbindungstyp: ", @"(auto|search|tunneling|routing)");
+                GetInputArg("connect", "Verbindungstyp: ", @"(auto|search|tunneling|routing|a|s|t|r)");
             }
 
             switch(Get<Argument.ConnectionType>("connect"))
@@ -132,7 +132,7 @@ internal class Arguments{
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
-        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671, true);
+        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671);
         int counter = 1;
         object lockObject = new object(); // Object for synchronization
 
@@ -371,7 +371,19 @@ internal class Arguments{
                 break;
 
             case Argument.ArgumentType.Enum:
-                arg.Value = Enum.Parse<Argument.ConnectionType>(answer);
+                Argument.ConnectionType connectionType;
+                if(!Enum.TryParse<Argument.ConnectionType>(answer, out connectionType))
+                {
+                    foreach(string ename in Enum.GetNames<Argument.ConnectionType>())
+                    {
+                        if(ename.StartsWith(answer))
+                        {
+                            connectionType = Enum.Parse<Argument.ConnectionType>(ename);
+                            break;
+                        }
+                    }
+                }
+                arg.Value = connectionType;
                 break;
         }
 

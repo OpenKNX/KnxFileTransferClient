@@ -10,7 +10,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+            "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
             "args": ["version"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
@@ -26,7 +26,7 @@
           "request": "launch",
           "preLaunchTask": "build",
           // If you have changed target frameworks, make sure to update the program path.
-          "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+          "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
           "args": ["list", "/"],
           "cwd": "${workspaceFolder}",
           // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
@@ -42,7 +42,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+            "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
             "args": ["fwupdate", "C:\\Users\\u6\\Documents\\repos\\Knx-DaliGW\\Firmware\\.pio\\build\\develop_REG1_JLINK\\firmware.uf2", "--verbose"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
@@ -58,7 +58,7 @@
           "request": "launch",
           "preLaunchTask": "build",
           // If you have changed target frameworks, make sure to update the program path.
-          "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+          "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
           "args": [
             "fwupdate", "../OAM-LogicModule/.pio/build/release_OKNXHW_REG2_PiPico_W/firmware.uf2", 
             "--verbose",
@@ -79,7 +79,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+            "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
             "args": ["--config", "mdt", "--verbose", "list", "/"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
@@ -95,7 +95,7 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/bin/Debug/net7.0/KnxFileTransferClient.dll",
+            "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
             "args": ["help"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

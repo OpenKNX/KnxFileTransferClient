@@ -78,11 +78,13 @@ internal class Arguments{
             switch(Get<Argument.ConnectionType>("connect"))
             {
                 case Argument.ConnectionType.auto:
-                    await SearchGateways(true);
+                    if(await SearchGateways(true) == false)
+                        throw new Exception("Keine Verbindung gefunden");
                     break;
 
                 case Argument.ConnectionType.search:
-                    await SearchGateways();
+                    if(await SearchGateways() == false)
+                        throw new Exception("Keine verbindung gefunden");
                     break;
 
                 case Argument.ConnectionType.tunneling:
@@ -134,7 +136,7 @@ internal class Arguments{
         }
     }
 
-    private async Task SearchGateways(bool isAuto = false)
+    private async Task<bool> SearchGateways(bool isAuto = false)
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
@@ -170,12 +172,14 @@ internal class Arguments{
 
         await Task.Delay(1000); // Wait for responses to come in 
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
+        if(gateways.Count == 0)
+            return false;
 
         string phaddr = Get<string>("pa");
         phaddr = phaddr.Substring(0, phaddr.LastIndexOf('.'));
         if(isAuto)
         {
-            Connection conn = gateways.FirstOrDefault(g => g.PhysicalAddress.ToString().StartsWith(phaddr));
+            Connection? conn = gateways.FirstOrDefault(g => g.PhysicalAddress.ToString().StartsWith(phaddr));
             if(conn == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -196,7 +200,7 @@ internal class Arguments{
             do
             {
                 Console.Write("Gateway Auswählen (Index): ");
-                string input = Console.ReadLine();
+                string input = Console.ReadLine() ?? "";
                 if(!int.TryParse(input, out selected))
                     selected = 0;
             } while(selected < 1 || selected > gateways.Count);
@@ -212,6 +216,7 @@ internal class Arguments{
             Set("port", conn.IPAddress.Port.ToString());
             IsRouting = conn.IsRouting;
         }
+        return true;
     }
 
     private void LoadArgs(string configName, string[] args)
@@ -221,7 +226,7 @@ internal class Arguments{
             Directory.CreateDirectory(path);
 
         string toLoad = CheckConfigFile(path, configName);
-        List<Argument> loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad));
+        List<Argument> loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad)) ?? new();
         foreach(Argument arg in loaded)
         {
             try{
@@ -346,7 +351,7 @@ internal class Arguments{
             }
             Console.ResetColor();
 
-            answer = Console.ReadLine().ToLower();
+            answer = Console.ReadLine()?.ToLower();
             if(string.IsNullOrEmpty(answer))
                 answer = arg.Value.ToString();
         } while(!CheckInput(answer, regex));
@@ -382,7 +387,7 @@ internal class Arguments{
                 {
                     foreach(string ename in Enum.GetNames<Argument.ConnectionType>())
                     {
-                        if(ename.StartsWith(answer))
+                        if(answer != null && ename.StartsWith(answer))
                         {
                             connectionType = Enum.Parse<Argument.ConnectionType>(ename);
                             break;

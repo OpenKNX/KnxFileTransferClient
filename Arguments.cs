@@ -140,11 +140,12 @@ internal class Arguments{
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
-        Kaenx.Konnect.Connections.KnxIpTunneling tunnel = new ("224.0.23.12", 3671);
+        Kaenx.Konnect.Connections.KnxIpSearch search = new();
         int counter = 1;
         object lockObject = new object(); // Object for synchronization
 
-        tunnel.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) =>
+        await search.Connect();
+        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) =>
         {
           string phAddrString = message.PhAddr.ToString();
           lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
@@ -168,7 +169,7 @@ internal class Arguments{
             }
           }
         };
-        await tunnel.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
+        await search.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
 
         await Task.Delay(1000); // Wait for responses to come in 
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");

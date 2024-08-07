@@ -90,10 +90,18 @@ class Program
             else
                 conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
 
-            await conn.Connect();
+            try {
+                await conn.Connect();
+            } catch(Exception ex) {
+                throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
+            }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
-            await device.Connect();
+            try {
+                await device.Connect();
+            } catch(Exception ex) {
+                throw new Exception("Das Gerät ist nicht erreichbar.", ex);
+            }
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
@@ -655,7 +663,7 @@ class Program
         var key = Console.ReadKey(false);
         Console.WriteLine();
         if (key.KeyChar == 'J' || key.KeyChar == 'j') {
-            Console.WriteLine("Conv:  Update wird fortgesetzt!");
+            Console.WriteLine("Conv:  Update wird ausgeführt!");
             return true;
         }
         return false;

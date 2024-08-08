@@ -17,7 +17,8 @@ internal class Arguments{
         new("ga", "Gateway PA", Argument.ArgumentType.String, "1.1.0", true),
         new("gs", "Routing Source Address", Argument.ArgumentType.String, "0.0.1", true),
         new("config", "Konfigurationsname", Argument.ArgumentType.String, "default"),
-        new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false)
+        new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false),
+        new("no-route-check", "Keine Überprüfung der maxAPDU auf der Route", Argument.ArgumentType.Bool, false)
     };
 
     public UnicastAddress? PhysicalAddress { get; private set; } = null;

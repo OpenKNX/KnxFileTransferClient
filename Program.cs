@@ -102,6 +102,45 @@ class Program
             } catch(Exception ex) {
                 throw new Exception("Das Gerät ist nicht erreichbar.", ex);
             }
+
+            if(!arguments.Get<bool>("no-route-check")) {
+                Console.WriteLine("Route:");
+                List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress);
+                foreach(string c in coupler)
+                    Console.WriteLine(" - " + c);
+
+                if(canFancy) {
+                    int top = Console.CursorTop;
+                    for(int i = 0; i < coupler.Count; i++) {
+                        Console.SetCursorPosition(13, top - coupler.Count + i);
+                        try {
+                            Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
+                            await device.Connect();
+                            Console.Write(device.MaxFrameLength);
+                        } catch {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.Write("Nicht erreichbar!");
+                            Console.ResetColor();
+                        }
+                    }
+                    Console.SetCursorPosition(0, top);
+                } else {
+                    Console.Write($" Überprüfe MaxAPDU: ");
+                    foreach(string c in coupler) {
+                        Console.Write($" - {c} ");
+                        try {
+                            Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
+                            await device.Connect();
+                            Console.WriteLine(device.MaxFrameLength);
+                        } catch {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("Nicht erreichbar!");
+                            Console.ResetColor();
+                        }
+                    }
+                }
+            }
+
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
@@ -203,6 +242,44 @@ class Program
 
         await Finish();
         return code;
+    }
+
+    private static List<string> CheckTopologie(UnicastAddress source, UnicastAddress target)
+    {
+        List<string> coupler = new();
+
+        UnicastAddress s1 = UnicastAddress.FromByteArray(source.GetBytes());
+        UnicastAddress s2 = UnicastAddress.FromByteArray(target.GetBytes());
+
+        int depth = 0;
+        int depth1 = 0;
+        int depth2 = 0;
+
+        if(s1.Area != s2.Area) depth = 2;
+        else depth = 1;
+
+        if(depth > 1 && s1.Area != 0) depth1 += 1;
+        if(depth1 > 0 && s1.Line != 0) depth1 += 1;
+        if(depth > 1 && s2.Area != 0) depth2 += 1;
+        if(depth2 > 0 && s2.Line != 0) depth2 += 1;
+
+        FindDepth(coupler, s1, depth1);
+        FindDepth(coupler, s2, depth2);
+
+        return coupler;
+    }
+
+    private static void FindDepth(List<string> coupler, UnicastAddress source, int depth)
+    {
+        for(int i = depth; i > 0; i--) {
+            if(source.DeviceAddress != 0) {
+                source = UnicastAddress.FromString($"{source.Area}.{source.Line}.0");
+                coupler.Add(source.ToString());
+            } else if(source.Line != 0) {
+                source = UnicastAddress.FromString($"{source.Area}.0.0");
+                coupler.Add(source.ToString());
+            }
+        }
     }
 
     private static async Task Finish()

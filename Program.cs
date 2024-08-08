@@ -96,6 +96,10 @@ class Program
                 throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
             }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
+            if(arguments.IsRouting)
+                Console.WriteLine("Info:  Verwendete Source-PA ist " + device.PhysicalAddress);
+            else
+                Console.WriteLine("Info:  PA der Schnittstelle ist " + device.PhysicalAddress);
             
             int useMaxAPDU = 1000;
             if(!arguments.Get<bool>("no-route-check")) {

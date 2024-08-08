@@ -96,52 +96,24 @@ class Program
                 throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
             }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
+            
+            int useMaxAPDU = 1000;
+            if(!arguments.Get<bool>("no-route-check")) {
+                int temp = await GetRouteMaxAPDU(conn, arguments);
+                if(temp < useMaxAPDU)
+                    useMaxAPDU = temp;
+            }
+
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             try {
                 await device.Connect();
             } catch(Exception ex) {
-                throw new Exception("Das Gerät ist nicht erreichbar.", ex);
+                throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }
-
-            if(!arguments.Get<bool>("no-route-check")) {
-                Console.WriteLine("Route:");
-                List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress);
-                foreach(string c in coupler)
-                    Console.WriteLine(" - " + c);
-
-                if(canFancy) {
-                    int top = Console.CursorTop;
-                    for(int i = 0; i < coupler.Count; i++) {
-                        Console.SetCursorPosition(13, top - coupler.Count + i);
-                        try {
-                            Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
-                            await device.Connect();
-                            Console.Write(device.MaxFrameLength);
-                        } catch {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.Write("Nicht erreichbar!");
-                            Console.ResetColor();
-                        }
-                    }
-                    Console.SetCursorPosition(0, top);
-                } else {
-                    Console.Write($" Überprüfe MaxAPDU: ");
-                    foreach(string c in coupler) {
-                        Console.Write($" - {c} ");
-                        try {
-                            Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
-                            await device.Connect();
-                            Console.WriteLine(device.MaxFrameLength);
-                        } catch {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Nicht erreichbar!");
-                            Console.ResetColor();
-                        }
-                    }
-                }
-            }
-
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            if(device.MaxFrameLength < useMaxAPDU)
+                useMaxAPDU = device.MaxFrameLength;
+            Console.WriteLine("Verwende MaxAPDU: " + useMaxAPDU);
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
@@ -244,6 +216,53 @@ class Program
         return code;
     }
 
+    private static async Task<int> GetRouteMaxAPDU(Kaenx.Konnect.Connections.IKnxConnection conn, Arguments aruments)
+    {
+        int highest = 1000;
+        Console.WriteLine("Route MaxAPDU:");
+        List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress);
+        // TODO add interface maxapdu
+        foreach(string c in coupler)
+            Console.WriteLine(" - " + c);
+
+        if(canFancy) {
+            int top = Console.CursorTop;
+            for(int i = 0; i < coupler.Count; i++) {
+                Console.SetCursorPosition(13, top - coupler.Count + i);
+                try {
+                    Kaenx.Konnect.Classes.BusDevice device = new (coupler[i], conn);
+                    await device.Connect();
+                    Console.Write(device.MaxFrameLength);
+                    if(device.MaxFrameLength < highest)
+                        highest = device.MaxFrameLength;
+                } catch {
+                    Console.Write("15 ");
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("Nicht erreichbar!");
+                    Console.ResetColor();
+                }
+            }
+            Console.SetCursorPosition(0, top);
+        } else {
+            Console.Write($" Überprüfe MaxAPDU: ");
+            foreach(string c in coupler) {
+                Console.Write($" - {c} ");
+                try {
+                    Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
+                    await device.Connect();
+                    Console.WriteLine(device.MaxFrameLength);
+                    if(device.MaxFrameLength < highest)
+                        highest = device.MaxFrameLength;
+                } catch {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Nicht erreichbar!");
+                    Console.ResetColor();
+                }
+            }
+        }
+        return highest;
+    }
+
     private static List<string> CheckTopologie(UnicastAddress source, UnicastAddress target)
     {
         List<string> coupler = new();
@@ -259,9 +278,9 @@ class Program
         else depth = 1;
 
         if(depth > 1 && s1.Area != 0) depth1 += 1;
-        if(depth1 > 0 && s1.Line != 0) depth1 += 1;
+        if(depth > 0 && s1.Line != 0) depth1 += 1;
         if(depth > 1 && s2.Area != 0) depth2 += 1;
-        if(depth2 > 0 && s2.Line != 0) depth2 += 1;
+        if(depth > 0 && s2.Line != 0) depth2 += 1;
 
         FindDepth(coupler, s1, depth1);
         FindDepth(coupler, s2, depth2);

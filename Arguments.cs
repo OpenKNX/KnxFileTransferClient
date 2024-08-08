@@ -172,7 +172,7 @@ internal class Arguments{
         };
         await search.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
 
-        await Task.Delay(1000); // Wait for responses to come in 
+        await Task.Delay(500); // Wait for responses to come in 
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
         if(gateways.Count == 0)
             return false;

@@ -117,6 +117,7 @@ class Program
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
             if(device.MaxFrameLength < useMaxAPDU)
                 useMaxAPDU = device.MaxFrameLength;
+            device.SetMaxFrameLength(useMaxAPDU);
             Console.WriteLine("Verwende MaxAPDU: " + useMaxAPDU);
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;

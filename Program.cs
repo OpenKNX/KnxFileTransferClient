@@ -123,10 +123,16 @@ class Program
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
             client.PrintInfo += PrintInfo;
-            string remoteVersion = await client.CheckVersion();
-            Console.ForegroundColor = ConsoleColor.DarkGray;
-            Console.WriteLine($"Version Remote:     {remoteVersion}");
-            Console.ResetColor();
+            try {
+                string remoteVersion = await client.CheckVersion();
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.WriteLine($"Version Remote:     {remoteVersion}");
+                Console.ResetColor();
+            } catch {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Version Remote:     Unbekannt");
+                Console.ResetColor();
+            }
             bool isOpen = false;
             do
             {

@@ -84,3 +84,13 @@ Optional Arguments:
 
 Example:
 >KnxFileTransferClient fwupdate ./firmware.uf2 --connect Tunneling --gw 192.168.178.254 --pa 1.1.100 --config MDT --verbose
+
+
+## Full Uninstall
+This is a list with folders where this applications saves files  
+  
+Windows:
+ - C:\Users\[UserName]\AppData\Local\KnxFileTransferClient\  
+  
+Unix:
+ - $HOME/.local/share  

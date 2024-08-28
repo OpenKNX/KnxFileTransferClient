@@ -1,5 +1,6 @@
 using System.Dynamic;
 using System.Net;
+using System.Net.NetworkInformation;
 using Kaenx.Konnect.Addresses;
 
 namespace KnxFileTransferClient;
@@ -91,13 +92,16 @@ internal class Arguments{
                 case Argument.ConnectionType.tunneling:
                     if(!GetRaw("gw").WasSet)
                         GetInputArg("gw", "IP-Adresse der Schnittstelle", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
+                    if(!GetRaw("port").WasSet)
+                        GetInputArg("port", "IP-Port der Schnittstelle", @"[0-9]{1,6}");
                     break;
 
                 case Argument.ConnectionType.routing:
                     if(!GetRaw("gw").WasSet)
-                        GetInputArg("gw", "IP-Adresse des Routers", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
+                        GetInputArg("gw", "Multicast Adresse", @"((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}");
                     if(!GetRaw("ga").WasSet)
                         GetInputArg("ga", "PA des Routers", @"^(1[0-5]|[0-9])\.(1[0-5]|[0-9])\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[0-9]{1,2})$");
+                    IsRouting = true;
                     break;
             }
             
@@ -146,7 +150,7 @@ internal class Arguments{
         object lockObject = new object(); // Object for synchronization
 
         await search.Connect();
-        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message) =>
+        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface netInterface, int netIndex) =>
         {
           string phAddrString = message.PhAddr.ToString();
           lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
@@ -158,13 +162,13 @@ internal class Arguments{
                 // ,2 instead of :D2, because the customer do not need to enter the trailing 0. thefore we do not need to show it, but keep the formatting
                 Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
 
-                gateways.Add(new() { IPAddress = message.Endpoint, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr });
+                gateways.Add(new() { IPAddress = message.Endpoint, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
                 counter++; // Increase counter here, because we want to count also gateways that support tunneling.
               }
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
               {
-                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
-                gateways.Add(new() { IsRouting = true, IPAddress = message.Multicast, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr });
+                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}] [{netInterface.Name}({netIndex})]");
+                gateways.Add(new() { IsRouting = true, IPAddress = message.Multicast, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface, NetIndex = netIndex });
                 counter++; // Increase counter here, because we want to count gateways that support tunneling. Which could be also a routing gateway
               }
             }
@@ -185,7 +189,7 @@ internal class Arguments{
             if(conn == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Es konnte keine verbindung automatisch gefunden werden.");
+                Console.WriteLine("Es konnte keine Verbindung automatisch gefunden werden.");
                 Console.ResetColor();
                 isAuto = false;
             } else {
@@ -228,7 +232,7 @@ internal class Arguments{
             Directory.CreateDirectory(path);
 
         string toLoad = CheckConfigFile(path, configName);
-        List<Argument> loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad)) ?? new();
+        List<Argument> loaded = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Argument>>(File.ReadAllText(toLoad)) ?? [];
         foreach(Argument arg in loaded)
         {
             try{

@@ -5,6 +5,7 @@ using System.Reflection;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;
+using System.Net.NetworkInformation;
 
 namespace KnxFileTransferClient;
 
@@ -96,10 +97,14 @@ class Program
                 throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
             }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
-            if(arguments.IsRouting)
-                Console.WriteLine("Info:  Verwendete Source-PA ist " + device.PhysicalAddress);
-            else
-                Console.WriteLine("Info:  PA der Schnittstelle ist " + device.PhysicalAddress);
+            if(arguments.IsRouting) {
+                Console.WriteLine("Info:  Verwendete Source-PA ist " + conn.PhysicalAddress);
+                Console.WriteLine($"Info:  Router MaxAPDU: {conn.MaxFrameLength}");
+            }
+            else {
+                Console.WriteLine("Info:  PA der Schnittstelle ist " + conn.PhysicalAddress);
+                Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
+            }
             
             int useMaxAPDU = 1000;
             if(!arguments.Get<bool>("no-route-check")) {
@@ -118,7 +123,16 @@ class Program
             if(device.MaxFrameLength < useMaxAPDU)
                 useMaxAPDU = device.MaxFrameLength;
             device.SetMaxFrameLength(useMaxAPDU);
-            Console.WriteLine("Verwende MaxAPDU: " + useMaxAPDU);
+            Console.WriteLine($"Info:  Verwende MaxAPDU: {useMaxAPDU}");
+            Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
+            if(arguments.Get<int>("pkg") > (useMaxAPDU - 3)) {
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine("WARN:  Package ist größer als MaxAPDU");
+                Console.WriteLine($"WARN:  Package wird geändert auf {useMaxAPDU-3}");
+                Console.ResetColor();
+                arguments.Set("pkg", useMaxAPDU-3);
+            }
+
             client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
@@ -216,8 +230,12 @@ class Program
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error: " + ex.Message);
+#if DEBUG
+            Console.WriteLine(ex.StackTrace);
+#else
             if(arguments.Get<bool>("verbose"))
                 Console.WriteLine(ex.StackTrace);
+#endif
             Console.ResetColor();
             await Finish();
             return -1;
@@ -230,16 +248,21 @@ class Program
     private static async Task<int> GetRouteMaxAPDU(Kaenx.Konnect.Connections.IKnxConnection conn, Arguments aruments)
     {
         int highest = 1000;
-        Console.WriteLine("Route MaxAPDU:");
-        List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress);
-        // TODO add interface maxapdu
+        Console.WriteLine("       Route MaxAPDU:");
+        List<string> coupler = CheckTopologie(UnicastAddress.FromString("1.1.1"), arguments.PhysicalAddress); //conn.PhysicalAddress, arguments.PhysicalAddress);
+        
+        if(coupler.Count == 0) {
+            Console.WriteLine("       Quelle und Ziel befinden sich auf der gleichen Linie");
+            return 255;
+        }
+
         foreach(string c in coupler)
-            Console.WriteLine(" - " + c);
+            Console.WriteLine("        - " + c);
 
         if(canFancy) {
             int top = Console.CursorTop;
             for(int i = 0; i < coupler.Count; i++) {
-                Console.SetCursorPosition(13, top - coupler.Count + i);
+                Console.SetCursorPosition(20, top - coupler.Count + i);
                 try {
                     Kaenx.Konnect.Classes.BusDevice device = new (coupler[i], conn);
                     await device.Connect();
@@ -251,13 +274,15 @@ class Program
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write("Nicht erreichbar!");
                     Console.ResetColor();
+                    if(15 < highest)
+                        highest = 15;
                 }
             }
             Console.SetCursorPosition(0, top);
         } else {
-            Console.Write($" Überprüfe MaxAPDU: ");
+            Console.Write($"       Überprüfe MaxAPDU: ");
             foreach(string c in coupler) {
-                Console.Write($" - {c} ");
+                Console.Write($"        - {c} ");
                 try {
                     Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
                     await device.Connect();
@@ -268,6 +293,8 @@ class Program
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.WriteLine("Nicht erreichbar!");
                     Console.ResetColor();
+                    if(15 < highest)
+                        highest = 15;
                 }
             }
         }
@@ -280,6 +307,9 @@ class Program
 
         UnicastAddress s1 = UnicastAddress.FromByteArray(source.GetBytes());
         UnicastAddress s2 = UnicastAddress.FromByteArray(target.GetBytes());
+
+        if(s1.Area == s2.Area && s1.Line == s2.Line)
+            return coupler;
 
         int depth = 0;
         int depth1 = 0;

@@ -190,7 +190,7 @@ function Invoke-DotnetExecute {
   $errorOutput = $process.StandardError.ReadToEnd()
 
   $process.WaitForExit()
-  Write-Host "`t✔ Done" -ForegroundColor Green
+  Write-Host "$checkmarkChar Done" -ForegroundColor Green
   if($Verbose) {
     # Display the captured output for debugging purposes
     Write-Host "Standard Output: $output"
@@ -201,22 +201,24 @@ function Invoke-DotnetExecute {
 
 # Define the OpenKNX tool name
 $OpenKNX_ToolName = "KnxFileTransferClient"
+$checkmarkChar = [char]::ConvertFromUtf32(0x2714);
+$infoChar = [char]::ConvertFromUtf32(0x2139);
 
 # Check on which OS we are running
 OpenKNX_ShowLogo "Build $($OpenKNX_ToolName) Release on $(CheckOS)"
 CheckOS | Out-Null
 
 if(-not $Verbose) {
-  Write-Host -NoNewline "`u{2139} " -ForegroundColor Blue
+  Write-Host -NoNewline "$infoChar " -ForegroundColor Blue
   Write-Host -NoNewline "Verbose mode is disabled. Use -Verbose to enable it!" -ForegroundColor Blue
-  Write-Host " `u{2139}" -ForegroundColor Blue
+  Write-Host " $infoChar" -ForegroundColor Blue
 }
 
 # check for working dir and create if not exists
 Write-Host "- Create release folder structure ..." -ForegroundColor Green -NoNewline
 if (Test-Path -Path release) {  Remove-Item -Recurse release\* -Force
 } else { New-Item -Path release -ItemType Directory | Out-Null }
-Write-Host "`t✔ Done" -ForegroundColor Green
+Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 # Create further required release folders
 New-Item -Path release/tools -ItemType Directory | Out-Null
@@ -233,11 +235,11 @@ Invoke-DotnetExecute -message "- Publish $($OpenKNX_ToolName) for Linux       ..
 
 # Copy publish version to release folder structure
 Write-Host "- Copy publish $($OpenKNX_ToolName) binaries to release folder structure ..." -ForegroundColor Green -NoNewline
-Copy-Item bin/Debug/net7.0/win-x64/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x64.exe
-Copy-Item bin/Debug/net7.0/win-x86/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x86.exe
-Copy-Item bin/Debug/net7.0/osx-x64/publish/$($OpenKNX_ToolName)       release/tools/MacOS/$($OpenKNX_ToolName)
-Copy-Item bin/Debug/net7.0/linux-x64/publish/$($OpenKNX_ToolName)     release/tools/Linux/$($OpenKNX_ToolName)
-Write-Host "`t✔ Done" -ForegroundColor Green
+Copy-Item bin/Debug/net8.0/win-x64/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x64.exe
+Copy-Item bin/Debug/net8.0/win-x86/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x86.exe
+Copy-Item bin/Debug/net8.0/osx-x64/publish/$($OpenKNX_ToolName)       release/tools/MacOS/$($OpenKNX_ToolName)
+Copy-Item bin/Debug/net8.0/linux-x64/publish/$($OpenKNX_ToolName)     release/tools/Linux/$($OpenKNX_ToolName)
+Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 # add necessary scripts
 Write-Host "- Copying scripts to release folder structure ..." -ForegroundColor Green -NoNewline
@@ -246,7 +248,7 @@ Copy-Item scripts/Install-Application.ps1 release/tools/              # This scr
 Copy-Item scripts/Install-KnxFileTransferClient.json  release/tools/  # This is the json file for the Install-OpenKNX-Tools.ps1 script
 Copy-Item scripts/Install-OpenKNX-Tools.ps1 release/                  # This script is used to install the application on Windows, Linux and macOS
 Copy-Item scripts/Remove-OpenKNX-Tools.ps1 release/                   # This script is used to uninstall the application on Windows, Linux and macOS
-Write-Host "`t✔ Done" -ForegroundColor Green
+Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 
 Write-Host "- Checking and getting versions directly from builded executables ..." -ForegroundColor Green -NoNewline
@@ -257,7 +259,7 @@ if( [string]::IsNullOrEmpty($OpenKNX_ToolVersion) ) {
   Write-Host "ERROR: Could not get version from the executable: '$($OpenKNX_ToolName)'" -ForegroundColor Red
   exit 1
 } else {
-  Write-Host "$($OpenKNX_ToolName) version: $OpenKNX_ToolVersion `t✔ Done" -ForegroundColor Green
+  Write-Host "$($OpenKNX_ToolName) version: $OpenKNX_ToolVersion $checkmarkChar Done" -ForegroundColor Green
   
   #Write the application version strings into the file version.txt. Remove version.txt if exists and create a new one.
   if (Test-Path -Path release/tools/version.txt) { Remove-Item -Path release/tools/version.txt -Force }
@@ -269,12 +271,12 @@ if( [string]::IsNullOrEmpty($OpenKNX_ToolVersion) ) {
 $ReleaseName = "$($OpenKNX_ToolName)-$($OpenKNX_ToolVersion).zip"
 Write-Host "- Create release package: $ReleaseName ..." -ForegroundColor Green -NoNewline
 Compress-Archive -Force -Path release/* -DestinationPath "$ReleaseName"
-Write-Host "`t✔ Done" -ForegroundColor Green
+Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 # Move package to release folder
 Write-Host "- Move release package to release folder ..." -ForegroundColor Green -NoNewline
 Move-Item "$ReleaseName" release/
-Write-Host "`t✔ Done" -ForegroundColor Green
+Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 # Clean working dir
 #Remove-Item -Recurse -Force release/* # Commented out for testing. Also comment out the line Move-Item "$ReleaseName" release/ above

@@ -249,8 +249,17 @@ class Program
     {
         int highest = 1000;
         Console.WriteLine("       Route MaxAPDU:");
-        List<string> coupler = CheckTopologie(UnicastAddress.FromString("1.1.1"), arguments.PhysicalAddress); //conn.PhysicalAddress, arguments.PhysicalAddress);
+        List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress); //conn.PhysicalAddress, arguments.PhysicalAddress);
         
+        if(conn is Kaenx.Konnect.Connections.KnxIpRouting) {
+            if(coupler.Contains(arguments.Get<string>("ga")))
+                coupler.Remove(arguments.Get<string>("ga"));
+            if(coupler.Count == 0) {
+                Console.WriteLine("       Ziel befinden sich direkt unter Router");
+                return 255;
+            }
+        }
+
         if(coupler.Count == 0) {
             Console.WriteLine("       Quelle und Ziel befinden sich auf der gleichen Linie");
             return 255;

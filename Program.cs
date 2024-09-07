@@ -805,7 +805,7 @@ class Program
     
     private static bool Continue()
     {
-        Console.Write("Comv:  Update trotzdem durchführen? (j/n) ");
+        Console.Write("Conv:  Update trotzdem durchführen? (j/n) ");
         var key = Console.ReadKey(false);
         Console.WriteLine();
         if (key.KeyChar == 'J' || key.KeyChar == 'j') {

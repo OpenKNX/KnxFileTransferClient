@@ -227,6 +227,8 @@ internal class Arguments{
 
     private void LoadArgs(string configName, string[] args)
     {
+        if(configName == "default")
+            return;
         string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
         if(!Directory.Exists(path))
             Directory.CreateDirectory(path);
@@ -244,6 +246,8 @@ internal class Arguments{
 
     private void SaveArgs(string configName)
     {
+        if(configName == "default")
+            return;
         string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
         List<Argument> argsDef = new();
 

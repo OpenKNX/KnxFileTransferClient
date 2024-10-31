@@ -6,12 +6,13 @@ using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;
 using System.Net.NetworkInformation;
+using System.IO.Hashing;
 
 namespace KnxFileTransferClient;
 
 class Program
 {    
-    static void PrintOpenKNXHeader(string addCustomText = null, ConsoleColor customTextColor = ConsoleColor.Green)
+    static void PrintOpenKNXHeader(string addCustomText = "", ConsoleColor customTextColor = ConsoleColor.Green)
     {
         Console.WriteLine();
         Console.Write("Open ");
@@ -20,10 +21,8 @@ class Program
         Console.ResetColor();
         string unicodeString = $"{(char)0x252C}{(char)0x2500}{(char)0x2500}{(char)0x2500}{(char)0x2500}{(char)0x2534} ";
         Console.Write($"{unicodeString} ");
-        if (addCustomText != null) {
-            if (customTextColor != null) {
-                Console.ForegroundColor = customTextColor;
-            }
+        if (!string.IsNullOrEmpty(addCustomText)) {
+            Console.ForegroundColor = customTextColor;
             Console.WriteLine($"{addCustomText}");
             Console.ResetColor();
         }
@@ -570,7 +569,16 @@ class Program
             Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
-        await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"));
+        short start_sequence = 0;
+
+        if(args.Get<bool>("no-resume"))
+        {
+            Console.WriteLine("Info:  Keine Wiederaufnahme");
+        } else {
+            start_sequence = await GetFileStartSequence(client, args.Source, args.Get<int>("pkg"));
+        }
+
+        await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
         Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
@@ -749,7 +757,8 @@ class Program
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
             try{
-                await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"));
+                short start_sequence = await GetFileStartSequence(client, "/firmware.bin", args.Get<int>("pkg"));
+                await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"), 0);
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
                 return;
@@ -813,5 +822,34 @@ class Program
             return true;
         }
         return false;
+    }
+
+    private static async Task<short> GetFileStartSequence(FileTransferClient client, string path, int length)
+    {
+        try
+        {
+            Lib.FileInfo info = await client.FileInfo(path);
+            byte[] file = System.IO.File.ReadAllBytes(path).Take(info.Size).ToArray();
+            byte[] crc32 = Crc32.Hash(file);
+            Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={BitConverter.ToString(crc32).Replace("-", "")} Remote={info.GetCrc()}");
+
+            if(info.GetCrc() == BitConverter.ToString(crc32).Replace("-", ""))
+            {
+                Console.WriteLine("Info:  Datei ist identisch");
+                short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
+                int start_byte = start_sequence * (length - 3);
+                int start_perc = (int)(info.Size / (double)start_byte * 100);
+                Console.WriteLine($"Info:  Starte bei {start_sequence}");
+                return start_sequence;
+            } else {
+                Console.WriteLine("Info:  Datei ist nicht identisch");
+                return 0;
+            }
+        }
+        catch
+        {
+            Console.WriteLine("Info:  Dateiinfos konnten nicht abgerufen werden");
+        }
+        return 0;
     }
 }

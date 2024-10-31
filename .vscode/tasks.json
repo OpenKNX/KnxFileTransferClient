@@ -29,7 +29,11 @@
                 "publish",
                 "${workspaceFolder}/KnxFileTransferClient.csproj",
                 "/property:GenerateFullPaths=true",
-                "/consoleloggerparameters:NoSummary"
+                "/consoleloggerparameters:NoSummary",
+                "-c", "Release",
+                "-r", "win-x86",
+                "--self-contained",
+                "-p:PublishSingleFile=true"
             ],
             "problemMatcher": "$msCompile"
         },

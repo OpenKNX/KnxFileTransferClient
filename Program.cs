@@ -160,59 +160,73 @@ class Program
                     await device.Connect();
                 }
 
-                switch(arguments.Command)
+                try
                 {
-                    case "help":
-                        code = help();
-                        break;
-                    case "format":
-                        await format(arguments);
-                        break;
-                    case "exists":
-                        await exists(arguments);
-                        break;
-                    case "rename":
-                        await rename(arguments);
-                        break;
-                    case "upload":
-                        await upload(arguments);
-                        break;
-                    case "download":
-                        await download(arguments);
-                        break;
-                    case "delete":
-                        await delete(arguments);
-                        break;
-                    case "list":
-                        await list(arguments);
-                        break;
-                    case "mkdir":
-                        await mkdir(arguments);
-                        break;
-                    case "rmdir":
-                        await rmdir(arguments);
-                        break;
-                    case "open":
+                    switch(arguments.Command)
                     {
-                        Console.WriteLine("Info:  Verbindung wurde geöffnet");
-                        isOpen = true;
-                        break;
+                        case "help":
+                            code = help();
+                            break;
+                        case "format":
+                            await format(arguments);
+                            break;
+                        case "exists":
+                            await exists(arguments);
+                            break;
+                        case "rename":
+                            await rename(arguments);
+                            break;
+                        case "upload":
+                            await upload(arguments);
+                            break;
+                        case "download":
+                            await download(arguments);
+                            break;
+                        case "delete":
+                            await delete(arguments);
+                            break;
+                        case "list":
+                            await list(arguments);
+                            break;
+                        case "mkdir":
+                            await mkdir(arguments);
+                            break;
+                        case "rmdir":
+                            await rmdir(arguments);
+                            break;
+                        case "open":
+                        {
+                            Console.WriteLine("Info:  Verbindung wurde geöffnet");
+                            isOpen = true;
+                            break;
+                        }
+                        case "close":
+                        {
+                            code = 0;
+                            isOpen = false;
+                            break;
+                        }
+                        case "fwupdate":
+                            await update(arguments);
+                            break;
+                        default:
+                        {
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine("Unbekanntes Kommando: " + arguments.Command);
+                            Console.ResetColor();
+                            break;
+                        }
                     }
-                    case "close":
-                    {
-                        code = 0;
-                        isOpen = false;
-                        break;
-                    }
-                    case "fwupdate":
-                        await update(arguments);
-                        break;
-                    default:
+                } catch(Exception ex) {
+                    if(isOpen)
                     {
                         Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Unbekanntes Kommando: " + arguments.Command);
+                        Console.WriteLine("Error: " + ex.Message);
+                        if(arguments.Get<bool>("verbose"))
+                            Console.WriteLine(ex.StackTrace);
                         Console.ResetColor();
-                        break;
+                    } else {
+                        throw ex;
                     }
                 }
             } while(isOpen);
@@ -559,14 +573,15 @@ class Program
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
+                await device.Connect();
                 Console.WriteLine("");
-                Console.WriteLine("Info:  Upload abgebrochen");
-                return;
+                Console.WriteLine("Info:  Datei wird nicht gelöscht");
+            } else {
+                await device.Connect();
+                await client.FileDelete(args.Target);
+                Console.WriteLine("");
+                Console.WriteLine("Info:  Datei wurde gelöscht");
             }
-            await device.Connect();
-            await client.FileDelete(args.Target);
-            Console.WriteLine("");
-            Console.WriteLine("Info:  Datei wurde gelöscht");
         }
 
         short start_sequence = 0;
@@ -575,7 +590,7 @@ class Program
         {
             Console.WriteLine("Info:  Keine Wiederaufnahme");
         } else {
-            start_sequence = await GetFileStartSequence(client, args.Source, args.Get<int>("pkg"));
+            start_sequence = await GetFileStartSequence(client, args.Source, args.Target, args.Get<int>("pkg"));
         }
 
         await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
@@ -757,7 +772,7 @@ class Program
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
             try{
-                short start_sequence = await GetFileStartSequence(client, "/firmware.bin", args.Get<int>("pkg"));
+                short start_sequence = await GetFileStartSequence(client, args.Source, "/firmware.bin", args.Get<int>("pkg"));
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"), 0);
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
@@ -824,12 +839,17 @@ class Program
         return false;
     }
 
-    private static async Task<short> GetFileStartSequence(FileTransferClient client, string path, int length)
+    private static async Task<short> GetFileStartSequence(FileTransferClient client, string source, string target, int length)
     {
         try
         {
-            Lib.FileInfo info = await client.FileInfo(path);
-            byte[] file = System.IO.File.ReadAllBytes(path).Take(info.Size).ToArray();
+            Lib.FileInfo info = await client.FileInfo(target);
+            if(info.Size == 0)
+            {
+                Console.WriteLine("Info:  Datei ist leer");
+                return 0;
+            }
+            byte[] file = System.IO.File.ReadAllBytes(source).Take(info.Size).ToArray();
             byte[] crc32 = Crc32.Hash(file);
             Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={BitConverter.ToString(crc32).Replace("-", "")} Remote={info.GetCrc()}");
 

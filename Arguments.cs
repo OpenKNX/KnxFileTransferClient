@@ -75,7 +75,7 @@ internal class Arguments{
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine("(Auto|Search|Tunneling|Routing)");
                 Console.ResetColor();
-                GetInputArg("connect", "Verbindungstyp: ", @"(auto|search|tunneling|routing|a|s|t|r)");
+                GetInputArg("connect", "Verbindungstyp", @"(auto|search|tunneling|routing|a|s|t|r)", "search");
             }
 
             switch(Get<Argument.ConnectionType>("connect"))
@@ -338,13 +338,21 @@ internal class Arguments{
         }
     }
 
-    private bool GetInputArg(string name, string input, string regex)
+    private bool GetInputArg(string name, string input, string regex, string defaultVal = "")
     {
         Argument arg = GetRaw(name);
         string? answer;
 
         do {
-            Console.Write(input + " ");
+            Console.Write(input);
+            if(!string.IsNullOrEmpty(defaultVal))
+            {
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write($" ({defaultVal})");
+                Console.ResetColor();
+            }
+            Console.Write(": ");
+            
             Console.ForegroundColor = ConsoleColor.DarkGray;
             switch(arg.Type)
             {
@@ -363,6 +371,8 @@ internal class Arguments{
             Console.ResetColor();
 
             answer = Console.ReadLine()?.ToLower();
+            if(string.IsNullOrEmpty(answer) && !string.IsNullOrEmpty(defaultVal))
+                answer = defaultVal;
             if(string.IsNullOrEmpty(answer))
                 answer = arg.Value.ToString();
         } while(!CheckInput(answer, regex));

@@ -575,7 +575,7 @@ class Program
         {
             Console.WriteLine("Info:  Keine Wiederaufnahme");
         } else {
-            start_sequence = await GetFileStartSequence(client, args.Source, args.Get<int>("pkg"));
+            start_sequence = await GetFileStartSequence(client, args.Source, args.Get<int>("pkg"), true);
         }
 
         await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
@@ -757,7 +757,7 @@ class Program
             byte[] initdata = BitConverter.GetBytes(stream.Length);
 
             try{
-                short start_sequence = await GetFileStartSequence(client, "/firmware.bin", args.Get<int>("pkg"));
+                short start_sequence = await GetFileStartSequence(client, "/firmware.bin", args.Get<int>("pkg"), false);
                 await client.FileUpload("/firmware.bin", stream, args.Get<int>("pkg"), 0);
             } catch {
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
@@ -824,12 +824,17 @@ class Program
         return false;
     }
 
-    private static async Task<short> GetFileStartSequence(FileTransferClient client, string path, int length)
+    private static async Task<short> GetFileStartSequence(FileTransferClient client, string path, int length, bool isGZipped)
     {
         try
         {
             Lib.FileInfo info = await client.FileInfo(path);
-            byte[] file = System.IO.File.ReadAllBytes(path).Take(info.Size).ToArray();
+            byte[] file;
+            if(isGZipped)
+                file = FileHandler.GetBytes(path);
+            else
+                file = System.IO.File.ReadAllBytes(path).Take(info.Size).ToArray();
+            
             byte[] crc32 = Crc32.Hash(file);
             Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={BitConverter.ToString(crc32).Replace("-", "")} Remote={info.GetCrc()}");
 

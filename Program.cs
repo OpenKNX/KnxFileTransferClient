@@ -124,6 +124,7 @@ class Program
             if(device.MaxFrameLength < useMaxAPDU)
                 useMaxAPDU = device.MaxFrameLength;
             device.SetMaxFrameLength(useMaxAPDU);
+            Console.WriteLine($"Info:  Gerät MaxAPDU: {device.MaxFrameLength}");
             Console.WriteLine($"Info:  Verwende MaxAPDU: {useMaxAPDU}");
             Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
             if(arguments.Get<int>("pkg") > (useMaxAPDU - 3)) {
@@ -159,7 +160,7 @@ class Program
                     string[] args2 = args3.Split(" ");
                     arguments = new Arguments();
                     await arguments.Init(args2, true);
-                    await device.Connect();
+                    await device.Connect(true);
                 }
 
                 try
@@ -575,11 +576,11 @@ class Program
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
-                await device.Connect();
+                await device.Connect(true);
                 Console.WriteLine("");
                 Console.WriteLine("Info:  Datei wird nicht gelöscht");
             } else {
-                await device.Connect();
+                await device.Connect(true);
                 await client.FileDelete(args.Target);
                 Console.WriteLine("");
                 Console.WriteLine("Info:  Datei wurde gelöscht");
@@ -708,7 +709,8 @@ class Program
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     Console.WriteLine($"Version UF2:    0x{infoTag.Data[0] << 8 | infoTag.Data[1]:X4} {infoTag.Data[2]>>4}.{infoTag.Data[2]&0xF}.{infoTag.Data[3]}");
                     Console.ResetColor();
-                    await device.Connect();
+                    // if(!device.IsConnected())
+                    //     await device.Connect(true);
                     uint deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision = 0;
                     
                     try
@@ -748,7 +750,7 @@ class Program
                     }
 
                     //Konvertieren und abfrage können länger dauern
-                    await device.Disconnect();
+                    //await device.Disconnect();
                 } else {
                     Console.WriteLine("Info:  UF2 enthält keine Angaben zur Version!");
                 }
@@ -762,7 +764,6 @@ class Program
         {
             Console.WriteLine($"File:       Passe Firmware für Übertragung an...");
             long origsize = FileHandler.GetBytes(stream, args.Source); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
-            await device.Connect();
             Console.WriteLine($"Size:       {origsize} Bytes\t({origsize / 1024} kB) original");
             if(origsize != stream.Length)
             {
@@ -772,12 +773,16 @@ class Program
             Console.WriteLine();
 
             byte[] initdata = BitConverter.GetBytes(stream.Length);
-
+            if(!device.IsConnected())
+                await device.Connect(true);
+            
             try{
                 short start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false);
                 await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), 0);
             } catch {
-                Console.WriteLine("Upload fehlgeschlagen. Breche Update ab");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Upload fehlgeschlagen. Breche Update ab                        ");
+                Console.ResetColor();
                 return;
             }
 

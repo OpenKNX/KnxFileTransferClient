@@ -20,7 +20,8 @@ internal class Arguments{
         new("config", "Konfigurationsname", Argument.ArgumentType.String, "default"),
         new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false),
         new("no-route-check", "Keine Überprüfung der maxAPDU auf der Route", Argument.ArgumentType.Bool, false),
-        new("no-resume", "Vorhandene Dateien werden immer komplett neu übertragen", Argument.ArgumentType.Bool, false)
+        new("no-resume", "Vorhandene Dateien werden immer komplett neu übertragen", Argument.ArgumentType.Bool, false),
+        new("device-timeout", "Timeout in dem das Gerät eine Antwort schicken muss", Argument.ArgumentType.Int, 4000)
     };
 
     public UnicastAddress? PhysicalAddress { get; private set; } = null;
@@ -29,7 +30,7 @@ internal class Arguments{
     public string Target { get; private set; } = "";
     public string Command { get; private set; } = "";
     public bool IsRouting { get; private set; } = false;
-    private static readonly List<string> toSave = new() { "connect", "pa", "port", "gw", "ga", "gs", "pkg", "delay" };
+    private static readonly List<string> toSave = new() { "connect", "pa", "port", "gw", "ga", "gs" };
 
     public async Task Init(string[] args, bool isOpen = false)
     {
@@ -228,8 +229,6 @@ internal class Arguments{
 
     private void LoadArgs(string configName, string[] args)
     {
-        if(configName == "default")
-            return;
         string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
         if(!Directory.Exists(path))
             Directory.CreateDirectory(path);
@@ -247,8 +246,6 @@ internal class Arguments{
 
     private void SaveArgs(string configName)
     {
-        if(configName == "default")
-            return;
         string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
         List<Argument> argsDef = new();
 
@@ -422,7 +419,7 @@ internal class Arguments{
         return response;
     }
 
-    private bool GetWasSet(string name)
+    public bool GetWasSet(string name)
     {
         Argument? arg = arguments.SingleOrDefault(a => a.Name == name);
         if(arg == null)

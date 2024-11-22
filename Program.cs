@@ -115,6 +115,8 @@ class Program
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             try {
                 await device.Connect();
+                if(arguments.GetWasSet("device-timeout"))
+                    device.SetTimeout(arguments.Get<int>("device-timeout"));
             } catch(Exception ex) {
                 throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }

@@ -13,12 +13,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     
-    <Version>0.2.2.0</Version>
-    <AssemblyVersion>0.2.2.0</AssemblyVersion>
+    <Version>0.2.3.0</Version>
+    <AssemblyVersion>0.2.3.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
-
 </Project>

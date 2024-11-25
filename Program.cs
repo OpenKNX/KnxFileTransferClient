@@ -858,20 +858,24 @@ class Program
             }
             byte[] file;
             if(isGZipped)
-                file = FileHandler.GetBytes(source);
+                file = FileHandler.GetBytes(source).Take(info.Size).ToArray();
             else
                 file = System.IO.File.ReadAllBytes(source).Take(info.Size).ToArray();
 
-            byte[] crc32 = Crc32.Hash(file);
-            Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={BitConverter.ToString(crc32).Replace("-", "")} Remote={info.GetCrc()}");
+            CRCTool crc = new();
+            crc.Init(CRCTool.CRCCode.CRC32);
+            ulong crc32 = crc.CalculateCRC(file);
+            string crc32str = BitConverter.ToString(BitConverter.GetBytes(crc32).Take(4).ToArray()).Replace("-", "");
+            Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={crc32str} Remote={info.GetCrc()}");
 
-            if(info.GetCrc() == BitConverter.ToString(crc32).Replace("-", ""))
+            if(info.GetCrc() == crc32str)
             {
                 Console.WriteLine("Info:  Datei ist identisch");
                 short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
                 int start_byte = start_sequence * (length - 3);
                 int start_perc = (int)(info.Size / (double)start_byte * 100);
-                Console.WriteLine($"Info:  Starte bei {start_sequence}");
+                Console.WriteLine($"Info:  Starte bei {start_sequence*length} Byte ({start_perc}%)");
+                start_sequence++; // sequence starts at 1, 0 is open file etc.
                 return start_sequence;
             } else {
                 Console.WriteLine("Info:  Datei ist nicht identisch");

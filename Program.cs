@@ -865,7 +865,8 @@ class Program
             CRCTool crc = new();
             crc.Init(CRCTool.CRCCode.CRC32);
             ulong crc32 = crc.CalculateCRC(file);
-            string crc32str = BitConverter.ToString(BitConverter.GetBytes(crc32).Take(4).ToArray()).Replace("-", "");
+            byte[] x = BitConverter.GetBytes(crc32).Take(4).Reverse().ToArray();
+            string crc32str = BitConverter.ToString(x).Replace("-", "");
             Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={crc32str} Remote={info.GetCrc()}");
 
             if(info.GetCrc() == crc32str)

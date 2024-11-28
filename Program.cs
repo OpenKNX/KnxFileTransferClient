@@ -461,12 +461,18 @@ class Program
 
     private static void PrintInfo(string info)
     {
+        if(canFancy && !firstDraw)
+        {
+            Console.SetCursorPosition(62, Console.CursorTop);
+            Console.WriteLine();
+        }
         Console.ForegroundColor = ConsoleColor.DarkCyan;
         Console.Write("Info:  " + info);
         for(int i = (7+info.Length); i < 64; i++)
             Console.Write(" ");
         Console.WriteLine();
         Console.ResetColor();
+        firstDraw = true;
     }
 
     private static int help()

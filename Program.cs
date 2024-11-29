@@ -105,13 +105,6 @@ class Program
                 Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
             }
             
-            int useMaxAPDU = 1000;
-            if(!arguments.Get<bool>("no-route-check")) {
-                int temp = await GetRouteMaxAPDU(conn, arguments);
-                if(temp < useMaxAPDU)
-                    useMaxAPDU = temp;
-            }
-
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             try {
                 await device.Connect();
@@ -121,6 +114,10 @@ class Program
                 throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            int useMaxAPDU = 1000;
+            // TODO get real MaxFrameLength from connection
+            // if(conn.MaxFrameLength < useMaxAPDU)
+            //     useMaxAPDU = conn.MaxFrameLength;
             if(device.MaxFrameLength < useMaxAPDU)
                 useMaxAPDU = device.MaxFrameLength;
             device.SetMaxFrameLength(useMaxAPDU);
@@ -259,112 +256,6 @@ class Program
 
         await Finish();
         return code;
-    }
-
-    private static async Task<int> GetRouteMaxAPDU(Kaenx.Konnect.Connections.IKnxConnection conn, Arguments aruments)
-    {
-        int highest = 1000;
-        Console.WriteLine("       Route MaxAPDU:");
-        List<string> coupler = CheckTopologie(conn.PhysicalAddress, arguments.PhysicalAddress); //conn.PhysicalAddress, arguments.PhysicalAddress);
-        
-        if(conn is Kaenx.Konnect.Connections.KnxIpRouting) {
-            if(coupler.Contains(arguments.Get<string>("ga")))
-                coupler.Remove(arguments.Get<string>("ga"));
-            if(coupler.Count == 0) {
-                Console.WriteLine("       Ziel befinden sich direkt unter Router");
-                return 255;
-            }
-        }
-
-        if(coupler.Count == 0) {
-            Console.WriteLine("       Quelle und Ziel befinden sich auf der gleichen Linie");
-            return 255;
-        }
-
-        foreach(string c in coupler)
-            Console.WriteLine("        - " + c);
-
-        if(canFancy) {
-            int top = Console.CursorTop;
-            for(int i = 0; i < coupler.Count; i++) {
-                Console.SetCursorPosition(20, top - coupler.Count + i);
-                try {
-                    Kaenx.Konnect.Classes.BusDevice device = new (coupler[i], conn);
-                    await device.Connect();
-                    Console.Write(device.MaxFrameLength);
-                    if(device.MaxFrameLength < highest)
-                        highest = device.MaxFrameLength;
-                } catch {
-                    Console.Write("15 ");
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write("Nicht erreichbar!");
-                    Console.ResetColor();
-                    if(15 < highest)
-                        highest = 15;
-                }
-            }
-            Console.SetCursorPosition(0, top);
-        } else {
-            Console.Write($"       Überprüfe MaxAPDU: ");
-            foreach(string c in coupler) {
-                Console.Write($"        - {c} ");
-                try {
-                    Kaenx.Konnect.Classes.BusDevice device = new (c, conn);
-                    await device.Connect();
-                    Console.WriteLine(device.MaxFrameLength);
-                    if(device.MaxFrameLength < highest)
-                        highest = device.MaxFrameLength;
-                } catch {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Nicht erreichbar!");
-                    Console.ResetColor();
-                    if(15 < highest)
-                        highest = 15;
-                }
-            }
-        }
-        return highest;
-    }
-
-    private static List<string> CheckTopologie(UnicastAddress source, UnicastAddress target)
-    {
-        List<string> coupler = new();
-
-        UnicastAddress s1 = UnicastAddress.FromByteArray(source.GetBytes());
-        UnicastAddress s2 = UnicastAddress.FromByteArray(target.GetBytes());
-
-        if(s1.Area == s2.Area && s1.Line == s2.Line)
-            return coupler;
-
-        int depth = 0;
-        int depth1 = 0;
-        int depth2 = 0;
-
-        if(s1.Area != s2.Area) depth = 2;
-        else depth = 1;
-
-        if(depth > 1 && s1.Area != 0) depth1 += 1;
-        if(depth > 0 && s1.Line != 0) depth1 += 1;
-        if(depth > 1 && s2.Area != 0) depth2 += 1;
-        if(depth > 0 && s2.Line != 0) depth2 += 1;
-
-        FindDepth(coupler, s1, depth1);
-        FindDepth(coupler, s2, depth2);
-
-        return coupler;
-    }
-
-    private static void FindDepth(List<string> coupler, UnicastAddress source, int depth)
-    {
-        for(int i = depth; i > 0; i--) {
-            if(source.DeviceAddress != 0) {
-                source = UnicastAddress.FromString($"{source.Area}.{source.Line}.0");
-                coupler.Add(source.ToString());
-            } else if(source.Line != 0) {
-                source = UnicastAddress.FromString($"{source.Area}.0.0");
-                coupler.Add(source.ToString());
-            }
-        }
     }
 
     private static async Task Finish()

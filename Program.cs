@@ -285,7 +285,7 @@ class Program
             firstDraw = false;
 
             if (canFancy)
-                Console.Write("Progress: [                    ]    % -     B/s -      s left");
+                Console.Write("Progress: [                    ]    % -     B/s - 000m:00s left");
         }
 
         if (canFancy)
@@ -305,9 +305,8 @@ class Program
             Console.Write(speed);
 
             Console.SetCursorPosition(50, Console.CursorTop);
-            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
-                Console.Write(" ");
-            Console.Write(timeLeft);
+            TimeSpan t = TimeSpan.FromSeconds(timeLeft);
+            Console.Write(string.Format("{0:D3}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
 
             Console.SetCursorPosition(0, Console.CursorTop);
         }
@@ -328,9 +327,8 @@ class Program
                 Console.Write(" ");
             Console.Write(speed + " B/s - ");
 
-            for (int i = 0; i < 4 - timeLeft.ToString().Length; i++)
-                Console.Write(" ");
-            Console.Write(timeLeft + " s left");
+            TimeSpan t = TimeSpan.FromSeconds(timeLeft);
+            Console.Write(string.Format("{0:D3}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
             Console.WriteLine();
         }
     }

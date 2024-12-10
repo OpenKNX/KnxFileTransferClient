@@ -8,6 +8,11 @@ public class Connection
     public string FriendlyName { get; set; } = "";
     public IPEndPoint IPAddress { get; set; }
     public UnicastAddress PhysicalAddress { get; set; } = UnicastAddress.FromString("0.0.0");
-    public NetworkInterface NetInterface { get; set; }
+    public NetworkInterface? NetInterface { get; set; }
     public int NetIndex { get; set; } = 0;
+
+    public Connection(IPEndPoint ip)
+    {
+        IPAddress = ip;
+    }
 }

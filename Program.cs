@@ -33,9 +33,8 @@ class Program
         Console.WriteLine();
     }
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
-    private static Kaenx.Konnect.Classes.BusDevice device = null;
-    private static FileTransferClient client = null;
-    private static Arguments arguments;
+    private static Kaenx.Konnect.Classes.BusDevice? device = null;
+    private static bool verbose = false;
 
     static async Task<int> Main(string[] args)
     {
@@ -51,13 +50,13 @@ class Program
         Assembly libAssembly = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly;
         
         System.Version? libVersion = new Version(libAssembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-          .FirstOrDefault(attr => attr.Key == "LibVersion")?.Value);
+          .FirstOrDefault(attr => attr.Key == "LibVersion")?.Value ?? "0.0.0.0");
         if (libAssembly != null && libVersion != null)
         {
           Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}");
         }
         Console.ResetColor();
-        arguments = new Arguments();
+        Arguments arguments = new Arguments();
         try{
             await arguments.Init(args);
         } catch(Exception ex)
@@ -71,7 +70,8 @@ class Program
         if(arguments.Command == "version") return 0; // The version is requested, so exit with 0
         if(arguments.Command == "help")
             return help();
-        
+        verbose = arguments.Get<bool>("verbose");
+
         try { int top = Console.CursorTop; }
         catch { canFancy = false; }
 
@@ -105,6 +105,9 @@ class Program
                 Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
             }
             
+            if(arguments.PhysicalAddress == null)
+                throw new Exception("Keine PA angegeben");
+
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             try {
                 await device.Connect();
@@ -132,7 +135,7 @@ class Program
                 arguments.Set("pkg", useMaxAPDU-3);
             }
 
-            client = new FileTransferClient(device);
+            FileTransferClient client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
             client.PrintInfo += PrintInfo;
@@ -168,31 +171,31 @@ class Program
                             code = help();
                             break;
                         case "format":
-                            await format(arguments);
+                            await format(arguments, client);
                             break;
                         case "exists":
-                            await exists(arguments);
+                            await exists(arguments, client);
                             break;
                         case "rename":
-                            await rename(arguments);
+                            await rename(arguments, client);
                             break;
                         case "upload":
-                            await upload(arguments);
+                            await upload(arguments, client);
                             break;
                         case "download":
-                            await download(arguments);
+                            await download(arguments, client);
                             break;
                         case "delete":
-                            await delete(arguments);
+                            await delete(arguments, client);
                             break;
                         case "list":
-                            await list(arguments);
+                            await list(arguments, client);
                             break;
                         case "mkdir":
-                            await mkdir(arguments);
+                            await mkdir(arguments, client);
                             break;
                         case "rmdir":
-                            await rmdir(arguments);
+                            await rmdir(arguments, client);
                             break;
                         case "open":
                         {
@@ -207,7 +210,7 @@ class Program
                             break;
                         }
                         case "fwupdate":
-                            await update(arguments);
+                            await update(arguments, client);
                             break;
                         default:
                         {
@@ -226,7 +229,7 @@ class Program
                             Console.WriteLine(ex.StackTrace);
                         Console.ResetColor();
                     } else {
-                        throw ex;
+                        throw new Exception(ex.Message, ex);
                     }
                 }
             } while(isOpen);
@@ -342,7 +345,7 @@ class Program
         }
         Console.ForegroundColor = ConsoleColor.Red;
         Console.WriteLine($"Error ({errorCounting++:D2}): " + ex.Message);
-        if(arguments.Get<bool>("verbose"))
+        if(verbose)
             Console.WriteLine(ex.StackTrace);
         Console.ResetColor();
         firstDraw = true;
@@ -417,14 +420,14 @@ class Program
         return 0;
     }
 
-    private static async Task format(Arguments args)
+    private static async Task format(Arguments args, FileTransferClient client)
     {
         Console.WriteLine("Info:  Dateisystem wird formatiert");
         await client.Format();
         Console.WriteLine("Info:  Dateisystem erfolgreich formatiert");
     }
     
-    private static async Task exists(Arguments args)
+    private static async Task exists(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -437,7 +440,7 @@ class Program
         Console.WriteLine("Info:  Existiert" + (exists ? "":" nicht"));
     }
 
-    private static async Task rename(Arguments args)
+    private static async Task rename(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
@@ -450,7 +453,7 @@ class Program
         Console.WriteLine("Info:  Umbenennen erfolgreich");
     }
 
-    private static async Task upload(Arguments args)
+    private static async Task upload(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
@@ -460,6 +463,9 @@ class Program
             
         if(!args.Target.StartsWith("/"))
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
+
+        if(device == null)
+            throw new Exception("Kein Gerät verbunden");
             
         Console.WriteLine("Info:  Datei hochladen - von " + args.Source + " in " + args.Target);
 
@@ -495,7 +501,7 @@ class Program
         Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
-    private static async Task download(Arguments args)
+    private static async Task download(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Source-Pfad angegeben");
@@ -511,7 +517,7 @@ class Program
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
-    private static async Task delete(Arguments args)
+    private static async Task delete(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -524,7 +530,7 @@ class Program
         Console.WriteLine("Info:  Datei erfolgreich gelöscht");
     }
 
-    private static async Task list(Arguments args)
+    private static async Task list(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -541,7 +547,7 @@ class Program
             Console.WriteLine($"        - {(path.IsFile ? "Datei ":"Ordner")} {root}{path.Name}");
     }
     
-    private static async Task mkdir(Arguments args)
+    private static async Task mkdir(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -554,7 +560,7 @@ class Program
         Console.WriteLine("Info:  Ordner erfolgreich erstellt");
     }
     
-    private static async Task rmdir(Arguments args)
+    private static async Task rmdir(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -567,7 +573,7 @@ class Program
         Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
     }
     
-    private static async Task update(Arguments args)
+    private static async Task update(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
@@ -575,6 +581,9 @@ class Program
         if (!File.Exists(args.Source))
             throw new Exception("Das Programm kann die angegebene Firmware nicht finden");
 
+        if(device == null)
+            throw new Exception("Kein Gerät verbunden");
+            
         string extension = args.Source.Substring(args.Source.LastIndexOf("."));
         switch(extension)
         {

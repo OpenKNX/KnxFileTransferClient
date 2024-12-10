@@ -152,7 +152,7 @@ internal class Arguments{
         object lockObject = new object(); // Object for synchronization
 
         await search.Connect();
-        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface netInterface, int netIndex) =>
+        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface? netInterface, int netIndex) =>
         {
           string phAddrString = message.PhAddr.ToString();
           lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
@@ -164,13 +164,13 @@ internal class Arguments{
                 // ,2 instead of :D2, because the customer do not need to enter the trailing 0. thefore we do not need to show it, but keep the formatting
                 Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
 
-                gateways.Add(new() { IPAddress = message.Endpoint, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
+                gateways.Add(new(message.Endpoint) { FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
                 counter++; // Increase counter here, because we want to count also gateways that support tunneling.
               }
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
               {
-                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}] [{netInterface.Name}({netIndex})]");
-                gateways.Add(new() { IsRouting = true, IPAddress = message.Multicast, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface, NetIndex = netIndex });
+                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}] [{netInterface?.Name ?? "unbekannt"}({netIndex})]");
+                gateways.Add(new(message.Multicast) { IsRouting = true, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface, NetIndex = netIndex });
                 counter++; // Increase counter here, because we want to count gateways that support tunneling. Which could be also a routing gateway
               }
             }

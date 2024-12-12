@@ -154,22 +154,27 @@ internal class Arguments{
         await search.Connect();
         search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface? netInterface, int netIndex) =>
         {
-          string phAddrString = message.PhAddr.ToString();
+          if(message.PhAddr == null) return;
           lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
           {
-            if (uniquePhysicalAddresses.Add(phAddrString)) // Add returns true if the item was added, else false because it already exists in the HashSet (which means we already have a gateway with this physical address)
+            if (uniquePhysicalAddresses.Add(message.PhAddr.ToString())) // Add returns true if the item was added, else false because it already exists in the HashSet (which means we already have a gateway with this physical address)
             {
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))
               {
                 // ,2 instead of :D2, because the customer do not need to enter the trailing 0. thefore we do not need to show it, but keep the formatting
                 Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
 
+                if(message.Endpoint == null)
+                    return;
                 gateways.Add(new(message.Endpoint) { FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
                 counter++; // Increase counter here, because we want to count also gateways that support tunneling.
               }
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
               {
                 Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}] [{netInterface?.Name ?? "unbekannt"}({netIndex})]");
+                
+                if(message.Multicast == null)
+                    return;
                 gateways.Add(new(message.Multicast) { IsRouting = true, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface, NetIndex = netIndex });
                 counter++; // Increase counter here, because we want to count gateways that support tunneling. Which could be also a routing gateway
               }

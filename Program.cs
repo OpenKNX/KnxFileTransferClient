@@ -44,7 +44,7 @@ class Program
         Console.ForegroundColor = ConsoleColor.DarkGray;
         System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
         if(clientVersion != null) {
-            Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
+            Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}");
         }
         // Get the custom library attributes
         Assembly libAssembly = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly;

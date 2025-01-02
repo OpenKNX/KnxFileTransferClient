@@ -44,7 +44,10 @@ class Program
         Console.ForegroundColor = ConsoleColor.DarkGray;
         System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
         if(clientVersion != null) {
-            Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}");
+            if(clientVersion.Revision != 0)
+                Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}");
+            else
+                Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
         }
         // Get the custom library attributes
         Assembly libAssembly = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly;
@@ -226,7 +229,11 @@ class Program
                         Console.ForegroundColor = ConsoleColor.Red;
                         Console.WriteLine("Error: " + ex.Message);
                         if(arguments.Get<bool>("verbose"))
+                        {
                             Console.WriteLine(ex.StackTrace);
+                            if(ex.InnerException != null)
+                                Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
+                        }
                         Console.ResetColor();
                     } else {
                         throw new Exception(ex.Message, ex);
@@ -238,7 +245,11 @@ class Program
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error: " + ex.Message);
             if(arguments.Get<bool>("verbose"))
+            {
                 Console.WriteLine(ex.StackTrace);
+                if(ex.InnerException != null)
+                    Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
+            }
             Console.ResetColor();
             await Finish();
             return ex.ErrorCode;
@@ -248,9 +259,15 @@ class Program
             Console.WriteLine("Error: " + ex.Message);
 #if DEBUG
             Console.WriteLine(ex.StackTrace);
+            if(ex.InnerException != null)
+                Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
 #else
             if(arguments.Get<bool>("verbose"))
+            {
                 Console.WriteLine(ex.StackTrace);
+                if(ex.InnerException != null)
+                    Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
+            }
 #endif
             Console.ResetColor();
             await Finish();
@@ -309,7 +326,14 @@ class Program
 
             Console.SetCursorPosition(50, Console.CursorTop);
             TimeSpan t = TimeSpan.FromSeconds(timeLeft);
-            Console.Write(string.Format("{0:D3}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
+            if(timeLeft > 0){
+                // try {
+                //     Console.Write(string.Format("{0:D2}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
+                // } catch {
+                //     Console.Write("000m:00s left");
+                // }
+                Console.Write($"{t.TotalMinutes}m:{t.Seconds}s");
+            }
 
             Console.SetCursorPosition(0, Console.CursorTop);
         }
@@ -681,16 +705,29 @@ class Program
                 await device.Connect(true);
             
             try{
-                short start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false);
-                await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), 0);
-            } catch {
+                // sequence 0 is open file etc.
+                short start_sequence = 1;
+                if(args.Get<bool>("no-resume") == false)
+                    start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false);
+                else
+                    Console.WriteLine("Info:  Keine Wiederaufnahme");
+                await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence);
+            } catch (Exception ex) {
                 Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Error: " + ex.Message);
+                if(args.Get<bool>("verbose"))
+                {
+                    Console.WriteLine(ex.StackTrace);
+                    if(ex.InnerException != null)
+                        Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
+                }
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab                        ");
                 Console.ResetColor();
                 return;
             }
 
             Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
+            
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/fw.bin" + char.MinValue));
         }
     }
@@ -754,21 +791,24 @@ class Program
     {
         try
         {
+            bool canResume = await client.CheckFeature(FileTransferClient.FtmFeatures.Resume);
+            if(!canResume)
+            {
+                Console.WriteLine("Info:  Wiederaufnahme von Gerät nicht unterstützt");
+                return 1;
+            }
+
             Lib.FileInfo info = await client.FileInfo(target);
             if(info.Size == 0)
             {
                 Console.WriteLine("Info:  Datei ist leer");
-                return 0;
+                return 1;
             }
-            byte[] file;
-            if(isGZipped)
-                file = FileHandler.GetBytes(source).Take(info.Size).ToArray();
-            else
-                file = System.IO.File.ReadAllBytes(source).Take(info.Size).ToArray();
+            byte[] file = FileHandler.GetBytes(source);
 
             CRCTool crc = new();
             crc.Init(CRCTool.CRCCode.CRC32);
-            ulong crc32 = crc.CalculateCRC(file);
+            ulong crc32 = crc.CalculateCRC(file.Take(info.Size).ToArray());
             byte[] x = BitConverter.GetBytes(crc32).Take(4).Reverse().ToArray();
             string crc32str = BitConverter.ToString(x).Replace("-", "");
             Console.WriteLine($"Info:  Dateiinfos CRC32 Lokal={crc32str} Remote={info.GetCrc()}");
@@ -777,20 +817,20 @@ class Program
             {
                 Console.WriteLine("Info:  Datei ist identisch");
                 short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
-                int start_byte = start_sequence * (length - 3);
-                int start_perc = (int)(info.Size / (double)start_byte * 100);
-                Console.WriteLine($"Info:  Starte bei {start_sequence*length} Byte ({start_perc}%)");
+                int start_byte = (start_sequence * (length - 3)) + 1;
+                int start_perc = (int)((double)start_byte / file.Length * 100);
+                Console.WriteLine($"Info:  Starte bei {start_byte}/{file.Length} Byte ({start_perc}%)");
                 start_sequence++; // sequence starts at 1, 0 is open file etc.
                 return start_sequence;
             } else {
                 Console.WriteLine("Info:  Datei ist nicht identisch");
-                return 0;
+                return 1;
             }
         }
         catch
         {
             Console.WriteLine("Info:  Dateiinfos konnten nicht abgerufen werden");
         }
-        return 0;
+        return 1;
     }
 }

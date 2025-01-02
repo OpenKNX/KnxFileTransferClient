@@ -155,6 +155,7 @@ internal class Arguments{
         search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface? netInterface, int netIndex) =>
         {
           if(message.PhAddr == null) return;
+          if(message.IsMediumType(Kaenx.Konnect.Messages.Response.MsgSearchRes.MediumTypes.TP1) == false) return; // Only TP gateways are supported
           lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
           {
             if (uniquePhysicalAddresses.Add(message.PhAddr.ToString())) // Add returns true if the item was added, else false because it already exists in the HashSet (which means we already have a gateway with this physical address)

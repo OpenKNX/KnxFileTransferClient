@@ -53,13 +53,19 @@
             // Use IntelliSense to find out which attributes exist for C# debugging
             // Use hover for the description of the existing attributes
             // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
-            "name": "Test fwupdate",
+            "name": "Test fwupdate Dali",
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net8.0/KnxFileTransferClient.dll",
-            "args": ["fwupdate", "C:\\Users\\u6\\Documents\\repos\\Knx-DaliGW\\Firmware\\.pio\\build\\develop_REG1_JLINK\\firmware.uf2", "--verbose"],
+            "args": [
+                "fwupdate", "..\\GW-REG1-Dali\\.pio\\build\\develop_REG1_JLINK_V1\\firmware.uf2", 
+                "--verbose",
+                "--pa", "1.1.4",
+                "--connect", "auto",
+                "--pkg", "12"
+            ],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "integratedTerminal",

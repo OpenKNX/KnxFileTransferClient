@@ -120,7 +120,7 @@ public class Converter
             if(output.BlockCount - 1 == output.Sequence)
             {
                 int xcounter = (int)output.DataLength - 1;
-                while(output.Data[xcounter] == 0x00)
+                while(xcounter >= 0 && output.Data[xcounter] == 0x00)
                 {
                     xcounter--;
                 }

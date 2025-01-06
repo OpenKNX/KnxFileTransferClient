@@ -63,8 +63,8 @@
                 "fwupdate", "..\\GW-REG1-Dali\\.pio\\build\\develop_REG1_JLINK_V1\\firmware.uf2", 
                 "--verbose",
                 "--pa", "1.1.4",
-                "--connect", "auto",
-                "--pkg", "12"
+                "--connect", "search",
+                "--pkg", "128"
             ],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

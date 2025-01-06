@@ -305,7 +305,7 @@ class Program
             firstDraw = false;
 
             if (canFancy)
-                Console.Write("Progress: [                    ]    % -     B/s - 000m:00s left");
+                Console.Write("Progress: [                    ]    % -     B/s - 00m:00s left");
         }
 
         if (canFancy)
@@ -326,14 +326,7 @@ class Program
 
             Console.SetCursorPosition(50, Console.CursorTop);
             TimeSpan t = TimeSpan.FromSeconds(timeLeft);
-            if(timeLeft > 0){
-                // try {
-                //     Console.Write(string.Format("{0:D2}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
-                // } catch {
-                //     Console.Write("000m:00s left");
-                // }
-                Console.Write($"{t.TotalMinutes}m:{t.Seconds}s");
-            }
+            Console.Write(string.Format("{0:D2}m:{1:D2}s left", (int)Math.Floor(t.TotalMinutes), t.Seconds));
 
             Console.SetCursorPosition(0, Console.CursorTop);
         }
@@ -355,7 +348,7 @@ class Program
             Console.Write(speed + " B/s - ");
 
             TimeSpan t = TimeSpan.FromSeconds(timeLeft);
-            Console.Write(string.Format("{0:D3}m:{1:D2}s left", t.TotalMinutes, t.Seconds));
+            Console.Write(string.Format("{0:D2}m:{1:D2}s left", (int)Math.Floor(t.TotalMinutes), t.Seconds));
             Console.WriteLine();
         }
     }
@@ -819,7 +812,8 @@ class Program
                 short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
                 int start_byte = (start_sequence * (length - 3)) + 1;
                 int start_perc = (int)((double)start_byte / file.Length * 100);
-                Console.WriteLine($"Info:  Starte bei {start_byte}/{file.Length} Byte ({start_perc}%)");
+                int needed_sequences = (int)Math.Ceiling((double)file.Length / (length - 3));
+                Console.WriteLine($"Info:  Starte bei {start_byte}/{file.Length} Bytes ({start_perc}%) [{start_sequence}/{needed_sequences} Sequenzen]");
                 start_sequence++; // sequence starts at 1, 0 is open file etc.
                 return start_sequence;
             } else {

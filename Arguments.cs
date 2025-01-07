@@ -19,7 +19,6 @@ internal class Arguments{
         new("gs", "Routing Source Address", Argument.ArgumentType.String, "0.0.1", true),
         new("config", "Konfigurationsname", Argument.ArgumentType.String, "default"),
         new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false),
-        new("no-route-check", "Keine Überprüfung der maxAPDU auf der Route", Argument.ArgumentType.Bool, false),
         new("no-resume", "Vorhandene Dateien werden immer komplett neu übertragen", Argument.ArgumentType.Bool, false),
         new("device-timeout", "Timeout in dem das Gerät eine Antwort schicken muss", Argument.ArgumentType.Int, 4000)
     };

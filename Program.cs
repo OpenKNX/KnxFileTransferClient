@@ -428,8 +428,8 @@ class Program
 
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        Console.WriteLine("*  nur bei Befehl upload/download");
-        Console.WriteLine("** nur bei Befehl exists/rename/upload/download/list/mkdir/rmdir");
+        Console.WriteLine("*  nur bei Befehl upload/download/exists/rename/delete/fwupdate/mkdir");
+        Console.WriteLine("** nur bei Befehl upload/download/rename");
         Console.WriteLine();
         Console.WriteLine("Open  = Session Öffnen");
         Console.WriteLine("Close = Session Beenden");

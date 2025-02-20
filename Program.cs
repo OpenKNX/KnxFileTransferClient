@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text;
 using System;
 using System.Reflection;
@@ -43,20 +43,21 @@ class Program
         //Print the client version of the client and the lib
         Console.ForegroundColor = ConsoleColor.DarkGray;
         System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
-        if(clientVersion != null) {
+        if (clientVersion != null)
+        {
             if(clientVersion.Revision != 0)
                 Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}");
             else
                 Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
         }
         // Get the custom library attributes
-        Assembly libAssembly = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly;
-        
-        System.Version? libVersion = new Version(libAssembly.GetCustomAttributes<AssemblyMetadataAttribute>()
-          .FirstOrDefault(attr => attr.Key == "LibVersion")?.Value ?? "0.0.0.0");
-        if (libAssembly != null && libVersion != null)
+        System.Version? libVersion = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly.GetName().Version;
+        if (libVersion != null)
         {
-          Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}");
+            if(libVersion.Revision != 0)
+                Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}.{libVersion.Revision}");
+            else
+                Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}");
         }
         Console.ResetColor();
         Arguments arguments = new Arguments();

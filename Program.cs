@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using System;
 using System.Reflection;
@@ -506,7 +506,7 @@ class Program
             }
         }
 
-        short start_sequence = 0;
+        short start_sequence = 1;
 
         if(args.Get<bool>("no-resume"))
         {
@@ -515,7 +515,8 @@ class Program
             start_sequence = await GetFileStartSequence(client, args.Source, args.Target, args.Get<int>("pkg"), true);
         }
 
-        await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
+        if(start_sequence > 0)
+            await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
         Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
@@ -705,7 +706,9 @@ class Program
                     start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false);
                 else
                     Console.WriteLine("Info:  Keine Wiederaufnahme");
-                await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence);
+
+                if(start_sequence > 0)
+                    await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence);
             } catch (Exception ex) {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Error: " + ex.Message);
@@ -810,10 +813,17 @@ class Program
             if(info.GetCrc() == crc32str)
             {
                 Console.WriteLine("Info:  Datei ist identisch");
+
                 short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
+                if(file.Length == info.Size)
+                {
+                    Console.WriteLine("Info:  Datei ist vollständig");
+                    return -1;
+                }
+
                 int start_byte = (start_sequence * (length - 3)) + 1;
                 int start_perc = (int)((double)start_byte / file.Length * 100);
-                int needed_sequences = (int)Math.Ceiling((double)file.Length / (length - 3));
+                int needed_sequences = (int)Math.Ceiling((double)file.Length / (length - 3)) - 1;
                 Console.WriteLine($"Info:  Starte bei {start_byte}/{file.Length} Bytes ({start_perc}%) [{start_sequence}/{needed_sequences} Sequenzen]");
                 start_sequence++; // sequence starts at 1, 0 is open file etc.
                 return start_sequence;

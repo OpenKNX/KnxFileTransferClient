@@ -161,22 +161,21 @@ internal class Arguments{
             {
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))
               {
-                // ,2 instead of :D2, because the customer do not need to enter the trailing 0. thefore we do not need to show it, but keep the formatting
-                Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
-
                 if(message.Endpoint == null)
                     return;
+                Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
                 gateways.Add(new(message.Endpoint) { FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
-                counter++; // Increase counter here, because we want to count also gateways that support tunneling.
+                counter++;
               }
               if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
               {
-                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} ({message.PhAddr, -8}) [{message.FriendlyName}] [{netInterface?.Name ?? "unbekannt"}({netIndex})]");
-                
-                if(message.Multicast == null)
+                if(message.Multicast == null || netInterface == null)
                     return;
-                gateways.Add(new(message.Multicast) { IsRouting = true, FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface, NetIndex = netIndex });
-                counter++; // Increase counter here, because we want to count gateways that support tunneling. Which could be also a routing gateway
+                if(gateways.Any(g => g.IsRouting && g.NetInterface?.Id == netInterface.Id && g.IPAddress == message.Multicast))
+                    return; // We already have a gateway with this multicast address, so we skip it
+                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} [{netInterface?.Name ?? "Unbekanntes Interface"}]");
+                gateways.Add(new(message.Multicast) { IsRouting = true, NetInterface = netInterface, NetIndex = netIndex });
+                counter++;
               }
             }
           }

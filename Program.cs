@@ -760,6 +760,14 @@ class Program
             string crc32str = BitConverter.ToString(x).Replace("-", "");
             Console.WriteLine($"Info:  CRC der lokalen Firmware:      {crc32str}");
 
+            if(fileInfo.GetCrc() != crc32str)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Error: CRC stimmt nicht überein. Breche Update ab.               ");
+                Console.ResetColor();
+                return;
+            }
+
             Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
             
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/fw.bin" + char.MinValue));

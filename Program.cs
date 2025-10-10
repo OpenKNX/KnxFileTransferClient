@@ -35,6 +35,7 @@ class Program
     private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
     private static bool verbose = false;
+    private static int useMaxAPDU = 15;
 
     static async Task<int> Main(string[] args)
     {
@@ -106,7 +107,7 @@ class Program
             }
             else {
                 Console.WriteLine("Info:  PA der Schnittstelle ist " + conn.PhysicalAddress);
-                Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
+                // Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
             }
             
             if(arguments.PhysicalAddress == null)
@@ -121,7 +122,6 @@ class Program
                 throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
-            int useMaxAPDU = 1000;
             // TODO get real MaxFrameLength from connection
             // if(conn.MaxFrameLength < useMaxAPDU)
             //     useMaxAPDU = conn.MaxFrameLength;
@@ -138,6 +138,8 @@ class Program
                 Console.ResetColor();
                 arguments.Set("pkg", useMaxAPDU-3);
             }
+            // Set the MaxAPDU that we calculated
+            device.MaxFrameLength = useMaxAPDU;
 
             FileTransferClient client = new FileTransferClient(device);
             client.ProcessChanged += ProcessChanged;
@@ -165,6 +167,8 @@ class Program
                     arguments = new Arguments();
                     await arguments.Init(args2, true);
                     await device.Connect(true);
+                    // Set the MaxAPDU that we calculated
+                    device.MaxFrameLength = useMaxAPDU;
                 }
 
                 try
@@ -454,7 +458,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Exists - " + args.Source);
-        bool exists = await client.Exists(args.Source);
+        bool exists = await client.Exists(args.Source, args.Get<bool>("force"));
         Console.WriteLine("Info:  Existiert" + (exists ? "":" nicht"));
     }
 
@@ -467,7 +471,7 @@ class Program
             throw new Exception("Kein Ziel-Pfad angegeben");
             
         Console.WriteLine("Info:  Umbenennen - " + args.Source + " in " + args.Target);
-        await client.Rename(args.Source, args.Target);
+        await client.Rename(args.Source, args.Target, args.Get<bool>("force"));
         Console.WriteLine("Info:  Umbenennen erfolgreich");
     }
 
@@ -487,7 +491,7 @@ class Program
             
         Console.WriteLine("Info:  Datei hochladen - von " + args.Source + " in " + args.Target);
 
-        if(await client.Exists(args.Target))
+        if(await client.Exists(args.Target, args.Get<bool>("force")))
         {
             Console.WriteLine("       Die Datei existiert bereits.");
             Console.Write("       Datei löschen? (J/N): ");  // Yes/No or Ja/Nein but not Ja/Yes nor J/Y!
@@ -496,11 +500,15 @@ class Program
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
                 await device.Connect(true);
+                // Set the MaxAPDU that we calculated
+                device.MaxFrameLength = useMaxAPDU;
                 Console.WriteLine("");
                 Console.WriteLine("Info:  Datei wird nicht gelöscht");
             } else {
                 await device.Connect(true);
-                await client.FileDelete(args.Target);
+                // Set the MaxAPDU that we calculated
+                device.MaxFrameLength = useMaxAPDU;
+                await client.FileDelete(args.Target, args.Get<bool>("force"));
                 Console.WriteLine("");
                 Console.WriteLine("Info:  Datei wurde gelöscht");
             }
@@ -512,11 +520,11 @@ class Program
         {
             Console.WriteLine("Info:  Keine Wiederaufnahme");
         } else {
-            start_sequence = await GetFileStartSequence(client, args.Source, args.Target, args.Get<int>("pkg"), true);
+            start_sequence = await GetFileStartSequence(client, args.Source, args.Target, args.Get<int>("pkg"), true, args.Get<bool>("force"));
         }
 
         if(start_sequence > 0)
-            await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence);
+            await client.FileUpload(args.Source, args.Target, args.Get<int>("pkg"), start_sequence, args.Get<bool>("force"));
         Console.WriteLine($"Info:  Datei hochladen abgeschlossen");
     }
 
@@ -532,7 +540,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
             
         Console.WriteLine("Info:  Datei runterladen - von " + args.Source + " in " + args.Target);
-        await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"));
+        await client.FileDownload(args.Source, args.Target, args.Get<int>("pkg"), args.Get<bool>("force"));
         Console.WriteLine("Info:  Datei runterladen abgeschlossen");
     }
 
@@ -545,7 +553,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
 
         Console.WriteLine("Info:  Datei löschen - " + args.Source);
-        await client.FileDelete(args.Source);
+        await client.FileDelete(args.Source, args.Get<bool>("force"));
         Console.WriteLine("Info:  Datei erfolgreich gelöscht");
     }
 
@@ -558,7 +566,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner/datei.txt)");
 
         Console.WriteLine("Info:  Ordner auflisten - " + args.Source);
-        List<FileTransferPath> list = await client.List(args.Source);
+        List<FileTransferPath> list = await client.List(args.Source, args.Get<bool>("force"));
         string root = args.Source;
         if(!root.EndsWith("/"))
             root += "/";
@@ -575,7 +583,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner)");
 
         Console.WriteLine("Info:  Ordner erstellen - " + args.Source);
-        await client.DirCreate(args.Source);
+        await client.DirCreate(args.Source, args.Get<bool>("force"));
         Console.WriteLine("Info:  Ordner erfolgreich erstellt");
     }
     
@@ -588,7 +596,7 @@ class Program
             throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner)");
 
         Console.WriteLine("Info:  Ordner löschen - " + args.Source);
-        await client.DirDelete(args.Source);
+        await client.DirDelete(args.Source, args.Get<bool>("force"));
         Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
     }
     
@@ -697,18 +705,22 @@ class Program
 
             byte[] initdata = BitConverter.GetBytes(stream.Length);
             if(!device.IsConnected())
+            {
                 await device.Connect(true);
+                // Set the MaxAPDU that we calculated
+                device.MaxFrameLength = useMaxAPDU;
+            }
             
             try{
                 // sequence 0 is open file etc.
                 short start_sequence = 1;
                 if(args.Get<bool>("no-resume") == false)
-                    start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false);
+                    start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false, args.Get<bool>("force"));
                 else
                     Console.WriteLine("Info:  Keine Wiederaufnahme");
 
                 if(start_sequence > 0)
-                    await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence);
+                    await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence, args.Get<bool>("force"));
             } catch (Exception ex) {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Error: " + ex.Message);
@@ -784,7 +796,7 @@ class Program
         return false;
     }
 
-    private static async Task<short> GetFileStartSequence(FileTransferClient client, string source, string target, int length, bool isGZipped)
+    private static async Task<short> GetFileStartSequence(FileTransferClient client, string source, string target, int length, bool isGZipped, bool force)
     {
         try
         {
@@ -795,7 +807,7 @@ class Program
                 return 1;
             }
 
-            Lib.FileInfo info = await client.FileInfo(target);
+            Lib.FileInfo info = await client.FileInfo(target, force);
             if(info.Size == 0)
             {
                 Console.WriteLine("Info:  Datei ist leer");

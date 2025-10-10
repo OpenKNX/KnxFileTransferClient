@@ -122,6 +122,7 @@ class Program
                 throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }
             Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            useMaxAPDU = 255;
             // TODO get real MaxFrameLength from connection
             // if(conn.MaxFrameLength < useMaxAPDU)
             //     useMaxAPDU = conn.MaxFrameLength;
@@ -130,7 +131,6 @@ class Program
             device.SetMaxFrameLength(useMaxAPDU);
             Console.WriteLine($"Info:  Gerät MaxAPDU: {device.MaxFrameLength}");
             Console.WriteLine($"Info:  Verwende MaxAPDU: {useMaxAPDU}");
-            Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
             if(arguments.Get<int>("pkg") > (useMaxAPDU - 3)) {
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.WriteLine("WARN:  Package ist größer als MaxAPDU");
@@ -138,6 +138,7 @@ class Program
                 Console.ResetColor();
                 arguments.Set("pkg", useMaxAPDU-3);
             }
+            Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
             // Set the MaxAPDU that we calculated
             device.MaxFrameLength = useMaxAPDU;
 
@@ -165,10 +166,20 @@ class Program
                     string args3 = Console.ReadLine() ?? "";
                     string[] args2 = args3.Split(" ");
                     arguments = new Arguments();
-                    await arguments.Init(args2, true);
-                    await device.Connect(true);
-                    // Set the MaxAPDU that we calculated
-                    device.MaxFrameLength = useMaxAPDU;
+                    try
+                    {
+                        await arguments.Init(args2, true);
+                        await device.Connect(true);
+                        // Set the MaxAPDU that we calculated
+                        device.MaxFrameLength = useMaxAPDU;
+                    } catch(Exception ex)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine("Error: " + ex.Message);
+                        Console.ResetColor();
+                        isOpen = false;
+                        continue;
+                    }
                 }
 
                 try
@@ -734,6 +745,20 @@ class Program
                 Console.ResetColor();
                 return;
             }
+
+            Console.WriteLine("Info:  Dateiübertragung abgeschlossen                          ");
+            Console.WriteLine("Info:  Übertragene Firmware wird geprüft...                    ");
+
+            Lib.FileInfo fileInfo = await client.FileInfo("/fw.bin", args.Get<bool>("force"));
+            Console.WriteLine($"Info:  CRC der übertragene Firmware: {fileInfo.GetCrc()}");
+            byte[] file = FileHandler.GetBytes(args.Source);
+
+            CRCTool crc = new();
+            crc.Init(CRCTool.CRCCode.CRC32);
+            ulong crc32 = crc.CalculateCRC(file);
+            byte[] x = BitConverter.GetBytes(crc32).Take(4).Reverse().ToArray();
+            string crc32str = BitConverter.ToString(x).Replace("-", "");
+            Console.WriteLine($"Info:  CRC der lokalen Firmware:      {crc32str}");
 
             Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
             

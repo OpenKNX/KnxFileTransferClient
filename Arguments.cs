@@ -233,7 +233,7 @@ internal class Arguments{
 
     private void LoadArgs(string configName, string[] args)
     {
-        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenKNX", "KnxFileTransferClient");
         if(!Directory.Exists(path))
             Directory.CreateDirectory(path);
 
@@ -250,7 +250,7 @@ internal class Arguments{
 
     private void SaveArgs(string configName)
     {
-        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "KnxFileTransferClient");
+        string path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "OpenKNX", "KnxFileTransferClient");
         List<Argument> argsDef = new();
 
         foreach(Argument arg in arguments)

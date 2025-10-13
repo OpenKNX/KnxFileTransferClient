@@ -13,10 +13,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     
-    <AssemblyVersion>0.2.5.0</AssemblyVersion>
+    <AssemblyVersion>0.2.6.0</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="System.Management.Automation" Version="7.5.0" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System;
+using System.Management.Automation;
 using System.Reflection;
 using Kaenx.Konnect.Addresses;
 using Kaenx.Konnect.Messages.Response;
@@ -36,6 +37,7 @@ class Program
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
     private static bool verbose = false;
     private static int useMaxAPDU = 15;
+    private static bool remoteCanUseResume = false;
 
     static async Task<int> Main(string[] args)
     {
@@ -150,6 +152,8 @@ class Program
                 string remoteVersion = await client.CheckVersion();
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"Version Remote:     {remoteVersion}");
+                SemanticVersion sv = new SemanticVersion(remoteVersion);
+                remoteCanUseResume = sv >= new SemanticVersion(1, 3, 0);
                 Console.ResetColor();
             } catch {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -215,6 +219,9 @@ class Program
                             break;
                         case "rmdir":
                             await rmdir(arguments, client);
+                            break;
+                        case "info":
+                            await info(arguments, client);
                             break;
                         case "open":
                         {
@@ -610,7 +617,21 @@ class Program
         await client.DirDelete(args.Source, args.Get<bool>("force"));
         Console.WriteLine("Info:  Ordner erfolgreich gelöscht");
     }
-    
+
+    private static async Task info(Arguments args, FileTransferClient client)
+    {
+        if (string.IsNullOrEmpty(args.Source))
+            throw new Exception("Kein Pfad angegeben");
+
+        if (!args.Source.StartsWith("/"))
+            throw new Exception("Pfadangaben auf dem Zielgerät müssen absolut angegeben werden (zB /ordner)");
+
+        Console.WriteLine("Info:  Datei-Informationen - " + args.Source);
+        Lib.FileInfo info = await client.FileInfo(args.Source, args.Get<bool>("force"));
+        Console.WriteLine($"        - Size: {info.Size}");
+        Console.WriteLine($"        - CRC:  {info.GetCrc()}");
+    }
+
     private static async Task update(Arguments args, FileTransferClient client)
     {
         if(string.IsNullOrEmpty(args.Source))
@@ -725,7 +746,7 @@ class Program
             try{
                 // sequence 0 is open file etc.
                 short start_sequence = 1;
-                if(args.Get<bool>("no-resume") == false)
+                if(args.Get<bool>("no-resume") == false && remoteCanUseResume)
                     start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false, args.Get<bool>("force"));
                 else
                     Console.WriteLine("Info:  Keine Wiederaufnahme");

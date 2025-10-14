@@ -153,7 +153,7 @@ class Program
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"Version Remote:     {remoteVersion}");
                 SemanticVersion sv = new SemanticVersion(remoteVersion);
-                remoteCanUseResume = sv >= new SemanticVersion(1, 3, 0);
+                remoteCanUseResume = sv >= new SemanticVersion(0, 1, 3);
                 Console.ResetColor();
             } catch {
                 Console.ForegroundColor = ConsoleColor.Red;

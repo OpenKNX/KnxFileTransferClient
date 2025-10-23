@@ -779,7 +779,7 @@ class Program
             ulong crc32 = crc.CalculateCRC(file);
             byte[] x = BitConverter.GetBytes(crc32).Take(4).Reverse().ToArray();
             string crc32str = BitConverter.ToString(x).Replace("-", "");
-            Console.WriteLine($"Info:  CRC der lokalen Firmware:      {crc32str}");
+            Console.WriteLine($"Info:  CRC der lokalen Firmware:     {crc32str}");
 
             if(fileInfo.GetCrc() != crc32str)
             {

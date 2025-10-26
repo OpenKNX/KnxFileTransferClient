@@ -146,7 +146,7 @@ function Get-ApplicationVersion {
   # the patern for bossac and others is: 'Version (\d+(\.\d+)*)'
   $pattern = switch ($application) {
       "OpenKNXproducer" { 'OpenKNXproducer (\d+(\.\d+)*)' }
-      "KnxFileTransferClient" { 'Version Client:\s+(\d+(\.\d+(\.\d+)?)?)' }
+      "KnxFileTransferClient" { 'Version Client:\s+(\d+(\.\d+(\.\d+(\.\d+))?)?)' }
       default { 'Version (\d+(\.\d+)*)' }
   }
   if($Verbose) { Write-Host "Pattern: $pattern" -ForegroundColor Yellow }

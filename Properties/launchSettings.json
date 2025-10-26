@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "KnxFileTransferClient": {
+      "commandName": "Project",
+      "commandLineArgs": "open"
+    }
+  }
+}

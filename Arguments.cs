@@ -1,7 +1,12 @@
 using System.Dynamic;
 using System.Net;
 using System.Net.NetworkInformation;
+using Kaenx.Konnect;
 using Kaenx.Konnect.Addresses;
+using Kaenx.Konnect.Connections;
+using Kaenx.Konnect.Telegram.Contents;
+using Kaenx.Konnect.Telegram.IP;
+using Kaenx.Konnect.Telegram.IP.DIB;
 
 namespace KnxFileTransferClient;
 
@@ -146,43 +151,71 @@ internal class Arguments{
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
-        Kaenx.Konnect.Connections.KnxIpSearch search = new();
+        //Kaenx.Konnect.Connections.KnxIpSearch search = new();
         int counter = 1;
         object lockObject = new object(); // Object for synchronization
 
-        await search.Connect();
-        search.OnSearchResponse += (Kaenx.Konnect.Messages.Response.MsgSearchRes message, NetworkInterface? netInterface, int netIndex) =>
-        {
-          if(message.PhAddr == null) return;
-          if(message.IsMediumType(Kaenx.Konnect.Messages.Response.MsgSearchRes.MediumTypes.TP1) == false) return; // Only TP gateways are supported
-          lock (lockObject) // Lock to ensure thread safety, else we could get duplicate entries and order problems
-          {
-            if (uniquePhysicalAddresses.Add(message.PhAddr.ToString())) // Add returns true if the item was added, else false because it already exists in the HashSet (which means we already have a gateway with this physical address)
-            {
-              if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Tunneling))
-              {
-                if(message.Endpoint == null)
-                    return;
-                Console.WriteLine($"{counter,2} Tunneling -> {message.Endpoint, -20} ({message.PhAddr, -8}) [{message.FriendlyName}]");
-                gateways.Add(new(message.Endpoint) { FriendlyName = message.FriendlyName, PhysicalAddress = message.PhAddr, NetInterface = netInterface });
-                counter++;
-              }
-              if (message.SupportedServiceFamilies.Any(s => s.ServiceFamilyType == ServiceFamilyTypes.Routing))
-              {
-                if(message.Multicast == null || netInterface == null)
-                    return;
-                if(gateways.Any(g => g.IsRouting && g.NetInterface?.Id == netInterface.Id && g.IPAddress == message.Multicast))
-                    return; // We already have a gateway with this multicast address, so we skip it
-                Console.WriteLine($"{counter,2} Routing   -> {message.Multicast, -20} [{netInterface?.Name ?? "Unbekanntes Interface"}]");
-                gateways.Add(new(message.Multicast) { IsRouting = true, NetInterface = netInterface, NetIndex = netIndex });
-                counter++;
-              }
-            }
-          }
-        };
-        await search.Send(new Kaenx.Konnect.Messages.Request.MsgSearchReq(), true);
+        IpKnxConnection _conn = KnxFactory.CreateTunnelingUdp(new(IPAddress.Parse("224.0.23.12"), 3671));
 
-        await Task.Delay(500); // Wait for responses to come in 
+        _conn.OnReceivedService += (IpTelegram message) =>
+        {
+            lock(lockObject)
+            {
+                if (message.ServiceIdentifier != Kaenx.Konnect.Enums.ServiceIdentifiers.SearchResponse)
+                    return;
+                SearchResponse? response = message as SearchResponse;
+                if (response == null)
+                    return;
+
+                HpaiContent? hpai = response.GetEndpoint();
+                DeviceInfo? deviceInfo = response.GetDeviceInfo();
+                SupportedServiceFamilies? svcFamilies = response.GetSupportedServiceFamilies();
+                if (hpai == null || deviceInfo == null || svcFamilies == null)
+                    return;
+
+                if(deviceInfo.Medium != Kaenx.Konnect.Enums.KnxMediums.TP1)
+                    return;
+
+                if (uniquePhysicalAddresses.Add(deviceInfo.UnicastAddress.ToString()))
+                {
+                    if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling) > 0)
+                    {
+                        int tunnelingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling);
+                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-8}) [{deviceInfo.FriendlyName}]");
+                        Connection conn = new(hpai.Endpoint)
+                        {
+                            FriendlyName = deviceInfo.FriendlyName,
+                            PhysicalAddress = deviceInfo.UnicastAddress,
+                            Version = tunnelingVersion
+                        };
+                        gateways.Add(conn);
+                        counter++;
+                    }
+
+                    if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing) > 0)
+                    {
+                        int routingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing);
+                        Console.WriteLine($"{counter,2} Routing v{routingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-8}) [{deviceInfo.FriendlyName}]");
+                        Connection conn = new(hpai.Endpoint)
+                        {
+                            IsRouting = true,
+                            FriendlyName = deviceInfo.FriendlyName,
+                            PhysicalAddress = deviceInfo.UnicastAddress,
+                            Version = routingVersion
+                        };
+                        gateways.Add(conn);
+                        counter++;
+                    }
+                }
+            }
+        };
+
+        SearchRequest req = new SearchRequest(_conn.GetLocalEndpoint());
+        await _conn.SendAsync(req);
+
+        await Task.Delay(500);
+        _conn.Dispose();
+
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
         if(gateways.Count == 0)
             return false;

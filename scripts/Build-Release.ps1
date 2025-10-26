@@ -235,10 +235,10 @@ Invoke-DotnetExecute -message "- Publish $($OpenKNX_ToolName) for Linux       ..
 
 # Copy publish version to release folder structure
 Write-Host "- Copy publish $($OpenKNX_ToolName) binaries to release folder structure ..." -ForegroundColor Green -NoNewline
-Copy-Item bin/Debug/net8.0/win-x64/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x64.exe
-Copy-Item bin/Debug/net8.0/win-x86/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x86.exe
-Copy-Item bin/Debug/net8.0/osx-x64/publish/$($OpenKNX_ToolName)       release/tools/MacOS/$($OpenKNX_ToolName)
-Copy-Item bin/Debug/net8.0/linux-x64/publish/$($OpenKNX_ToolName)     release/tools/Linux/$($OpenKNX_ToolName)
+Copy-Item bin/Debug/net9.0/win-x64/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x64.exe
+Copy-Item bin/Debug/net9.0/win-x86/publish/$($OpenKNX_ToolName).exe   release/tools/Windows/$($OpenKNX_ToolName)-x86.exe
+Copy-Item bin/Debug/net9.0/osx-x64/publish/$($OpenKNX_ToolName)       release/tools/MacOS/$($OpenKNX_ToolName)
+Copy-Item bin/Debug/net9.0/linux-x64/publish/$($OpenKNX_ToolName)     release/tools/Linux/$($OpenKNX_ToolName)
 Write-Host "$checkmarkChar Done" -ForegroundColor Green
 
 # add necessary scripts

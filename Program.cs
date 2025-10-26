@@ -3,11 +3,12 @@ using System.Text;
 using System;
 using System.Management.Automation;
 using System.Reflection;
+using Kaenx.Konnect;
 using Kaenx.Konnect.Addresses;
-using Kaenx.Konnect.Messages.Response;
 using KnxFileTransferClient.Lib;
 using System.Net.NetworkInformation;
 using System.IO.Hashing;
+using Kaenx.Konnect.Connections;
 
 namespace KnxFileTransferClient;
 
@@ -33,7 +34,7 @@ class Program
         Console.WriteLine(" KNX");
         Console.WriteLine();
     }
-    private static Kaenx.Konnect.Connections.IKnxConnection? conn = null;
+    private static Kaenx.Konnect.Connections.IpKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
     private static bool verbose = false;
     private static int useMaxAPDU = 15;
@@ -68,9 +69,7 @@ class Program
             await arguments.Init(args);
         } catch(Exception ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: " + ex.Message);
-            Console.ResetColor();
+            PrintError(ex, arguments.Get<bool>("verbose"));
             await Finish();
             return -1;
         }
@@ -93,22 +92,25 @@ class Program
         try
         {
             if(arguments.IsRouting)
-                conn = new Kaenx.Konnect.Connections.KnxIpRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
+                conn = KnxFactory.CreateRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else
-                conn = new Kaenx.Konnect.Connections.KnxIpTunneling(arguments.Interface, arguments.Get<int>("port"));
+                conn = KnxFactory.CreateTunnelingUdp(arguments.Interface, arguments.Get<int>("port"));
 
-            try {
-                await conn.Connect();
-            } catch(Exception ex) {
-                throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
-            }
+            try
+                {
+                    await conn.Connect();
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
+                }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             if(arguments.IsRouting) {
-                Console.WriteLine("Info:  Verwendete Source-PA ist " + conn.PhysicalAddress);
-                Console.WriteLine($"Info:  Router MaxAPDU: {conn.MaxFrameLength}");
+                Console.WriteLine("Info:  Verwendete Source-PA ist " + conn.GetLocalAddress() ?? "unbekannt");
+                Console.WriteLine($"Info:  Router MaxAPDU: {conn.GetMaxApduLength()}");
             }
             else {
-                Console.WriteLine("Info:  PA der Schnittstelle ist " + conn.PhysicalAddress);
+                Console.WriteLine("Info:  PA der Schnittstelle ist " + conn.GetLocalAddress() ?? "unbekannt");
                 // Console.WriteLine($"Info:  Schnittstelle MaxAPDU: {conn.MaxFrameLength}");
             }
             
@@ -117,7 +119,7 @@ class Program
 
             device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
             try {
-                await device.Connect();
+                await device.ConnectIndividual();
                 if(arguments.GetWasSet("device-timeout"))
                     device.SetTimeout(arguments.Get<int>("device-timeout"));
             } catch(Exception ex) {
@@ -153,7 +155,7 @@ class Program
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"Version Remote:     {remoteVersion}");
                 SemanticVersion sv = new SemanticVersion(remoteVersion);
-                remoteCanUseResume = sv >= new SemanticVersion(1, 3, 0);
+                remoteCanUseResume = sv >= new SemanticVersion(0, 1, 3);
                 Console.ResetColor();
             } catch {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -173,14 +175,12 @@ class Program
                     try
                     {
                         await arguments.Init(args2, true);
-                        await device.Connect(true);
+                        await device.ConnectIndividual(true);
                         // Set the MaxAPDU that we calculated
                         device.MaxFrameLength = useMaxAPDU;
                     } catch(Exception ex)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Error: " + ex.Message);
-                        Console.ResetColor();
+                        PrintError(ex, arguments.Get<bool>("verbose"));
                         isOpen = false;
                         continue;
                     }
@@ -249,15 +249,7 @@ class Program
                 } catch(Exception ex) {
                     if(isOpen)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Error: " + ex.Message);
-                        if(arguments.Get<bool>("verbose"))
-                        {
-                            Console.WriteLine(ex.StackTrace);
-                            if(ex.InnerException != null)
-                                Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
-                        }
-                        Console.ResetColor();
+                        PrintError(ex, arguments.Get<bool>("verbose"));
                     } else {
                         throw new Exception(ex.Message, ex);
                     }
@@ -265,34 +257,12 @@ class Program
             } while(isOpen);
         } catch(FileTransferException ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: " + ex.Message);
-            if(arguments.Get<bool>("verbose"))
-            {
-                Console.WriteLine(ex.StackTrace);
-                if(ex.InnerException != null)
-                    Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
-            }
-            Console.ResetColor();
+            PrintError(ex, arguments.Get<bool>("verbose"));
             await Finish();
             return ex.ErrorCode;
         } catch(Exception ex)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error: " + ex.Message);
-#if DEBUG
-            Console.WriteLine(ex.StackTrace);
-            if(ex.InnerException != null)
-                Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
-#else
-            if(arguments.Get<bool>("verbose"))
-            {
-                Console.WriteLine(ex.StackTrace);
-                if(ex.InnerException != null)
-                    Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
-            }
-#endif
-            Console.ResetColor();
+            PrintError(ex, arguments.Get<bool>("verbose"));
             await Finish();
             return -1;
         }
@@ -517,13 +487,13 @@ class Program
             ConsoleKeyInfo input = Console.ReadKey();
             if(input.Key != ConsoleKey.J && input.Key != ConsoleKey.Y)
             {
-                await device.Connect(true);
+                await device.ConnectIndividual(true);
                 // Set the MaxAPDU that we calculated
                 device.MaxFrameLength = useMaxAPDU;
                 Console.WriteLine("");
                 Console.WriteLine("Info:  Datei wird nicht gelöscht");
             } else {
-                await device.Connect(true);
+                await device.ConnectIndividual(true);
                 // Set the MaxAPDU that we calculated
                 device.MaxFrameLength = useMaxAPDU;
                 await client.FileDelete(args.Target, args.Get<bool>("force"));
@@ -634,17 +604,17 @@ class Program
 
     private static async Task update(Arguments args, FileTransferClient client)
     {
-        if(string.IsNullOrEmpty(args.Source))
+        if (string.IsNullOrEmpty(args.Source))
             throw new Exception("Kein Pfad angegeben");
 
         if (!File.Exists(args.Source))
             throw new Exception("Das Programm kann die angegebene Firmware nicht finden");
 
-        if(device == null)
+        if (device == null)
             throw new Exception("Kein Gerät verbunden");
-            
+
         string extension = args.Source.Substring(args.Source.LastIndexOf("."));
-        switch(extension)
+        switch (extension)
         {
             case ".bin":
                 Console.WriteLine("Info:  Bei diesem Dateiformat kann die Kompatibilität\r\n       zur Applikation nicht überprüft werden.");
@@ -660,52 +630,57 @@ class Program
                 break;
         }
 
-        if(extension == ".uf2")
+        if (extension == ".uf2")
         {
-            if(!args.Get<bool>("force"))
+            if (!args.Get<bool>("force"))
             {
                 List<Tag> tags = Converter.GetTags(args.Source);
                 Tag? infoTag = tags.SingleOrDefault(t => t.Type == Converter.KNX_EXTENSION_TYPE);
 
-                if(infoTag != null)
+                if (infoTag != null)
                 {
                     Console.ForegroundColor = ConsoleColor.DarkGray;
-                    Console.WriteLine($"Version UF2:    0x{infoTag.Data[0] << 8 | infoTag.Data[1]:X4} {infoTag.Data[2]>>4}.{infoTag.Data[2]&0xF}.{infoTag.Data[3]}");
+                    Console.WriteLine($"Version UF2:    0x{infoTag.Data[0] << 8 | infoTag.Data[1]:X4} {infoTag.Data[2] >> 4}.{infoTag.Data[2] & 0xF}.{infoTag.Data[3]}");
                     Console.ResetColor();
                     // if(!device.IsConnected())
-                    //     await device.Connect(true);
+                    //     await device.ConnectIndividual(true);
                     uint deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision = 0;
-                    
+
                     try
                     {
                         byte[] res = await device.PropertyRead(0, 78);
-                        if (res.Length == 6) {
+                        if (res.Length == 6)
+                        {
                             deviceOpenKnxId = res[2];
                             deviceAppNumber = res[3];
                             deviceAppVersion = res[4];
 
                             res = await device.PropertyRead(0, 25);
-                            if(res.Length == 2)
+                            if (res.Length == 2)
                             {
                                 deviceAppRevision = (uint)(res[0] >> 3);
-                            } else {
+                            }
+                            else
+                            {
                                 throw new Exception("PropertyResponse für Version war ungültig");
                             }
 
                             Console.ForegroundColor = ConsoleColor.DarkGray;
-                            Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion>>4}.{deviceAppVersion&0xF}.{deviceAppRevision}");
+                            Console.WriteLine($"Version Device: 0x{deviceOpenKnxId << 8 | deviceAppNumber:X4} {deviceAppVersion >> 4}.{deviceAppVersion & 0xF}.{deviceAppRevision}");
                             Console.ResetColor();
-                        } else {
+                        }
+                        else
+                        {
                             throw new Exception("PropertyResponse für HardwareType war ungültig");
                         }
 
-                        if(!CheckApplication(infoTag, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision))
+                        if (!CheckApplication(infoTag, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision))
                             return;
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine("Error beim Lesen der Version. Die Kompatibilität wird nicht geprüft!");
-                        if(args.Get<bool>("verbose"))
+                        if (args.Get<bool>("verbose"))
                         {
                             Console.WriteLine(ex.Message);
                             Console.WriteLine(ex.StackTrace);
@@ -714,21 +689,25 @@ class Program
 
                     //Konvertieren und abfrage können länger dauern
                     //await device.Disconnect();
-                } else {
+                }
+                else
+                {
                     Console.WriteLine("Info:  UF2 enthält keine Angaben zur Version!");
                 }
-            } else {
+            }
+            else
+            {
                 Console.WriteLine("Info:  Firmware wird übertragen, egal welche Version auf dem Gerät ist.");
                 Console.WriteLine("       Du musst sicher sein, dass die Hardware die Firmware unterstützt, die hochgeladen wird!");
             }
         }
-        
-        using(MemoryStream stream = new MemoryStream())
+
+        using (MemoryStream stream = new MemoryStream())
         {
             Console.WriteLine($"File:       Passe Firmware für Übertragung an...");
             long origsize = FileHandler.GetBytes(stream, args.Source); //, args.Get("force") == 1, deviceOpenKnxId, deviceAppNumber, deviceAppVersion, deviceAppRevision);
             Console.WriteLine($"Size:       {origsize} Bytes\t({origsize / 1024} kB) original");
-            if(origsize != stream.Length)
+            if (origsize != stream.Length)
             {
                 Console.WriteLine($"Size:       {stream.Length} Bytes\t({stream.Length / 1024} kB) komprimiert");
             }
@@ -736,32 +715,29 @@ class Program
             Console.WriteLine();
 
             byte[] initdata = BitConverter.GetBytes(stream.Length);
-            if(!device.IsConnected())
+            if (!device.IsConnected())
             {
-                await device.Connect(true);
+                await device.ConnectIndividual(true);
                 // Set the MaxAPDU that we calculated
                 device.MaxFrameLength = useMaxAPDU;
             }
-            
-            try{
+
+            try
+            {
                 // sequence 0 is open file etc.
                 short start_sequence = 1;
-                if(args.Get<bool>("no-resume") == false && remoteCanUseResume)
+                if (args.Get<bool>("no-resume") == false && remoteCanUseResume)
                     start_sequence = await GetFileStartSequence(client, args.Source, "/fw.bin", args.Get<int>("pkg"), false, args.Get<bool>("force"));
                 else
                     Console.WriteLine("Info:  Keine Wiederaufnahme");
 
-                if(start_sequence > 0)
+                if (start_sequence > 0)
                     await client.FileUpload("/fw.bin", stream, args.Get<int>("pkg"), start_sequence, args.Get<bool>("force"));
-            } catch (Exception ex) {
+            }
+            catch (Exception ex)
+            {
+                PrintError(ex, args.Get<bool>("verbose"));
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Error: " + ex.Message);
-                if(args.Get<bool>("verbose"))
-                {
-                    Console.WriteLine(ex.StackTrace);
-                    if(ex.InnerException != null)
-                        Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
-                }
                 Console.WriteLine("Upload fehlgeschlagen. Breche Update ab                        ");
                 Console.ResetColor();
                 return;
@@ -781,7 +757,7 @@ class Program
             string crc32str = BitConverter.ToString(x).Replace("-", "");
             Console.WriteLine($"Info:  CRC der lokalen Firmware:     {crc32str}");
 
-            if(fileInfo.GetCrc() != crc32str)
+            if (fileInfo.GetCrc() != crc32str)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Error: CRC stimmt nicht überein. Breche Update ab.               ");
@@ -790,9 +766,22 @@ class Program
             }
 
             Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
-            
+
             await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/fw.bin" + char.MinValue));
         }
+    }
+    
+    private static void PrintError(Exception ex, bool verbose)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine("Error: " + ex.Message);
+        if (verbose)
+        {
+            Console.WriteLine(ex.StackTrace);
+            if (ex.InnerException != null)
+                Console.WriteLine("Inner: " + ex.InnerException.Message + "\r\n" + ex.InnerException.StackTrace);
+        }
+        Console.ResetColor();
     }
     
     private static bool CheckApplication(Tag tag, uint deviceOpenKnxId,  uint deviceAppNumber, uint deviceAppVersion, uint deviceAppRevision)

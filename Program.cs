@@ -39,9 +39,22 @@ class Program
     private static bool verbose = false;
     private static int useMaxAPDU = 15;
     private static bool remoteCanUseResume = false;
+    private static bool remoteResumeTimeout = false;
 
     static async Task<int> Main(string[] args)
     {
+        AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+        {
+            Console.WriteLine("ProcessExit – Verbindung wird geschlossen...");
+            Finish().Wait();
+        };
+        Console.CancelKeyPress += (sender, e) =>
+        {
+            // Console.WriteLine("CTRL+C erkannt – Verbindung wird geschlossen...");
+            // Finish().Wait();
+            Environment.Exit(0);
+        };
+
         PrintOpenKNXHeader("KnxFileTransferClient");
 
         //Print the client version of the client and the lib
@@ -151,12 +164,13 @@ class Program
             client.OnError += OnError;
             client.PrintInfo += PrintInfo;
             try {
-                string remoteVersion = await client.CheckVersion();
+                SemanticVersion remoteVersion = await client.CheckVersion();
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"Version Remote:     {remoteVersion}");
-                SemanticVersion sv = new SemanticVersion(remoteVersion);
-                remoteCanUseResume = sv >= new SemanticVersion(0, 1, 3);
+                remoteCanUseResume = remoteVersion >= new SemanticVersion(0, 1, 3);
+                remoteResumeTimeout = remoteVersion == new SemanticVersion(0, 1, 3);
                 Console.ResetColor();
+
             } catch {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine($"Version Remote:     Unbekannt");
@@ -274,9 +288,15 @@ class Program
     private static async Task Finish()
     {
         if (device != null)
-            await device.Disconnect();  // Use .Wait() to synchronously wait for completion. Deadlocks uncritical here, because the program is exiting anyway. 
+        {
+            await device.Disconnect();
+            device = null;
+        }
         if (conn != null)
+        {
             await conn.Disconnect();
+            conn = null;
+        }
     }
 
     static bool firstSpeed = true;
@@ -354,7 +374,7 @@ class Program
             Console.WriteLine();
         }
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine($"Error ({errorCounting++:D2}): " + ex.Message);
+        Console.WriteLine($"Error ({errorCounting++:D2}) [{DateTime.Now}]: " + ex.Message);
         if(verbose)
             Console.WriteLine(ex.StackTrace);
         Console.ResetColor();
@@ -767,14 +787,19 @@ class Program
 
             Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
 
-            await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/fw.bin" + char.MinValue));
+            try
+            {
+                await device.InvokeFunctionProperty(159, 101, System.Text.UTF8Encoding.UTF8.GetBytes("/fw.bin" + char.MinValue));
+            } catch {
+                // Das Gerät wird neu gestartet und die Verbindung geht verloren
+            }
         }
     }
     
     private static void PrintError(Exception ex, bool verbose)
     {
         Console.ForegroundColor = ConsoleColor.Red;
-        Console.WriteLine("Error: " + ex.Message);
+        Console.WriteLine($"Error [{DateTime.Now}]: {ex.Message}");
         if (verbose)
         {
             Console.WriteLine(ex.StackTrace);
@@ -853,10 +878,29 @@ class Program
             Lib.FileInfo info = await client.FileInfo(target, force);
             if(info.Size == 0)
             {
-                Console.WriteLine("Info:  Datei ist leer");
-                return 1;
+                if(remoteResumeTimeout)
+                {
+                    Console.WriteLine("Info:  Datei ist leer (Remote Resume Timeout)");
+                    Console.WriteLine("Info:  Warte 30s");
+                    await Task.Delay(30000);
+                    info = await client.FileInfo(target, force);
+                    if(info.Size == 0)
+                    {
+                        Console.WriteLine("Info:  Datei ist immer noch leer");
+                        return 1;
+                    }
+                } else
+                {
+                    Console.WriteLine("Info:  Datei ist leer");
+                    return 1;
+                }
             }
             byte[] file = FileHandler.GetBytes(source);
+
+            SemanticVersion version = await client.CheckVersion();
+            int packageSize = length - 6;
+            if (version <= new SemanticVersion(0, 1, 4))
+                packageSize = length - 3;
 
             CRCTool crc = new();
             crc.Init(CRCTool.CRCCode.CRC32);
@@ -869,16 +913,16 @@ class Program
             {
                 Console.WriteLine("Info:  Datei ist identisch");
 
-                short start_sequence = (short)Math.Floor(info.Size / (length - 3.0));
+                short start_sequence = (short)Math.Floor(info.Size / (packageSize * 1.0));
                 if(file.Length == info.Size)
                 {
                     Console.WriteLine("Info:  Datei ist vollständig");
                     return -1;
                 }
 
-                int start_byte = (start_sequence * (length - 3)) + 1;
+                int start_byte = (start_sequence * packageSize) + 1;
                 int start_perc = (int)((double)start_byte / file.Length * 100);
-                int needed_sequences = (int)Math.Ceiling((double)file.Length / (length - 3)) - 1;
+                int needed_sequences = (int)Math.Ceiling((double)file.Length / packageSize) - 1;
                 Console.WriteLine($"Info:  Starte bei {start_byte}/{file.Length} Bytes ({start_perc}%) [{start_sequence}/{needed_sequences} Sequenzen]");
                 start_sequence++; // sequence starts at 1, 0 is open file etc.
                 return start_sequence;

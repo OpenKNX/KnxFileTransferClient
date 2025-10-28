@@ -181,7 +181,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling) > 0)
                     {
                         int tunnelingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling);
-                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-8}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             FriendlyName = deviceInfo.FriendlyName,
@@ -195,7 +195,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing) > 0)
                     {
                         int routingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing);
-                        Console.WriteLine($"{counter,2} Routing v{routingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-8}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             IsRouting = true,

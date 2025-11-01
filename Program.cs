@@ -9,6 +9,7 @@ using KnxFileTransferClient.Lib;
 using System.Net.NetworkInformation;
 using System.IO.Hashing;
 using Kaenx.Konnect.Connections;
+using Kaenx.Konnect.Exceptions;
 
 namespace KnxFileTransferClient;
 
@@ -110,13 +111,17 @@ class Program
                 conn = KnxFactory.CreateTunnelingUdp(arguments.Interface, arguments.Get<int>("port"));
 
             try
-                {
-                    await conn.Connect();
-                }
-                catch (Exception ex)
-                {
-                    throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
-                }
+            {
+                await conn.Connect();
+            }
+            catch (InterfaceException ex)
+            {
+                throw new Exception("Die Schnittstelle hat einen Fehler zurückgegeben: " + ex.Message, ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Die Schnittstelle ist nicht erreichbar.", ex);
+            }
             Console.WriteLine("Info:  Verbindung zum Bus hergestellt");
             if(arguments.IsRouting) {
                 Console.WriteLine("Info:  Verwendete Source-PA ist " + conn.GetLocalAddress() ?? "unbekannt");

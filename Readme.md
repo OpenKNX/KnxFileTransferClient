@@ -9,6 +9,14 @@ This console app is uploading/downloading files to the filesystem of your knx-de
 It can also list all content of a directory or create/delete one.  
 
 
+## How to use it
+First make sure you installed the latest version under the [Releases](https://github.com/OpenKNX/KnxFileTransferClient/releases/latest).  
+To open the KnxFileTransfer install the tool just open a PowerShell window and enter:
+```
+~\bin\KnxFileTransfer command --parameter xy
+```
+For all the commands and parameter see [Usage](#usage).
+
 ## Requirements
 You will have to use the [OFM-FileTransferModule](https://github.com/OpenKNX/OFM-FileTransferModule).  
 

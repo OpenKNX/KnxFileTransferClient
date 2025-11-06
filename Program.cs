@@ -323,7 +323,7 @@ class Program
             firstDraw = false;
 
             if (canFancy)
-                Console.Write("Progress: [                    ]    % -     B/s - 00m:00s left");
+                Console.Write("Progress: [                    ]    % -     B/s - 00m:00s left ");
         }
 
         if (canFancy)

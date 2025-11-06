@@ -60,11 +60,11 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/net9.0/KnxFileTransferClient.dll",
             "args": [
-                "fwupdate", "..\\GW-REG1-Dali\\.pio\\build\\develop_REG1_JLINK_V1\\firmware.uf2", 
-                "--verbose",
+                "fwupdate", "..\\GW-REG1-Dali\\.pio\\build\\develop_REG1_ESP_DEV2_TP\\firmware.bin", 
+                // "--verbose",
                 "--pa", "1.1.4",
                 "--connect", "search",
-                "--pkg", "128"
+                "--pkg", "254"
             ],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

@@ -25,7 +25,8 @@ internal class Arguments{
         new("config", "Konfigurationsname", Argument.ArgumentType.String, "default"),
         new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false),
         new("no-resume", "Vorhandene Dateien werden immer komplett neu übertragen", Argument.ArgumentType.Bool, false),
-        new("device-timeout", "Timeout in dem das Gerät eine Antwort schicken muss", Argument.ArgumentType.Int, 4000)
+        new("device-timeout", "Timeout in dem das Gerät eine Antwort schicken muss", Argument.ArgumentType.Int, 4000),
+        new("tcp", "Verwende TCP als Transportprotokoll", Argument.ArgumentType.Bool, false)
     };
 
     public UnicastAddress? PhysicalAddress { get; private set; } = null;
@@ -130,6 +131,7 @@ internal class Arguments{
                 Console.ForegroundColor = ConsoleColor.DarkGray;
                 Console.WriteLine($"Verwende als source address {Get<string>("gs")}");
                 Console.ResetColor();
+                Set("tcp", "false");
             }
 
             SaveArgs(configName);
@@ -181,7 +183,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling) > 0)
                     {
                         int tunnelingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling);
-                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             FriendlyName = deviceInfo.FriendlyName,
@@ -190,12 +192,26 @@ internal class Arguments{
                         };
                         gateways.Add(conn);
                         counter++;
+
+                        if(tunnelingVersion >= 2)
+                        {
+                            Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [TCP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                            Connection tcpConn = new(hpai.Endpoint)
+                            {
+                                IsTCP = true,
+                                FriendlyName = deviceInfo.FriendlyName,
+                                PhysicalAddress = deviceInfo.UnicastAddress,
+                                Version = tunnelingVersion
+                            };
+                            gateways.Add(tcpConn);
+                            counter++;
+                        }
                     }
 
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing) > 0)
                     {
                         int routingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing);
-                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             IsRouting = true,
@@ -235,6 +251,7 @@ internal class Arguments{
                 Set("gw", conn.IPAddress.Address.ToString());
                 Set("ga", conn.PhysicalAddress.ToString());
                 Set("port", conn.IPAddress.Port.ToString());
+                Set("tcp", conn.IsTCP.ToString());
                 IsRouting = conn.IsRouting;
             }
         }
@@ -259,6 +276,7 @@ internal class Arguments{
             Set("gw", conn.IPAddress.Address.ToString());
             Set("ga", conn.PhysicalAddress.ToString());
             Set("port", conn.IPAddress.Port.ToString());
+            Set("tcp", conn.IsTCP.ToString());
             IsRouting = conn.IsRouting;
         }
         return true;

@@ -13,7 +13,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     
-    <AssemblyVersion>0.2.7.16</AssemblyVersion>
+    <AssemblyVersion>0.2.7.17</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

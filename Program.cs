@@ -60,22 +60,30 @@ class Program
 
         //Print the client version of the client and the lib
         Console.ForegroundColor = ConsoleColor.DarkGray;
-        System.Version? clientVersion = typeof(Program).Assembly.GetName().Version;
-        if (clientVersion != null)
+        System.Version? _version = typeof(Program).Assembly.GetName().Version;
+        if (_version != null)
         {
-            if(clientVersion.Revision != 0)
-                Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}.{clientVersion.Revision}");
+            if(_version.Revision != 0)
+                Console.WriteLine($"Version Client:        {_version.Major}.{_version.Minor}.{_version.Build}.{_version.Revision}");
             else
-                Console.WriteLine($"Version Client:     {clientVersion.Major}.{clientVersion.Minor}.{clientVersion.Build}");
+                Console.WriteLine($"Version Client:        {_version.Major}.{_version.Minor}.{_version.Build}");
         }
         // Get the custom library attributes
-        System.Version? libVersion = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly.GetName().Version;
-        if (libVersion != null)
+        _version = typeof(KnxFileTransferClient.Lib.FileTransferClient).Assembly.GetName().Version;
+        if (_version != null)
         {
-            if(libVersion.Revision != 0)
-                Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}.{libVersion.Revision}");
+            if (_version.Revision != 0)
+                Console.WriteLine($"Version Client.Lib:    {_version.Major}.{_version.Minor}.{_version.Build}.{_version.Revision}");
             else
-                Console.WriteLine($"Version Client.Lib: {libVersion.Major}.{libVersion.Minor}.{libVersion.Build}");
+                Console.WriteLine($"Version Client.Lib:    {_version.Major}.{_version.Minor}.{_version.Build}");
+        }
+        _version = typeof(Kaenx.Konnect.KnxFactory).Assembly.GetName().Version;
+        if (_version != null)
+        {
+            if (_version.Revision != 0)
+                Console.WriteLine($"Version Kaenx.Konnect: {_version.Major}.{_version.Minor}.{_version.Build}.{_version.Revision}");
+            else
+                Console.WriteLine($"Version Kaenx.Konnect: {_version.Major}.{_version.Minor}.{_version.Build}");
         }
         Console.ResetColor();
         Arguments arguments = new Arguments();
@@ -96,7 +104,7 @@ class Program
         catch { canFancy = false; }
 
         Console.ForegroundColor = ConsoleColor.Cyan;
-        Console.WriteLine($"IP-Adresse: {arguments.Interface}" + (arguments.IsRouting ? " (Multicast)" : ""));
+        Console.WriteLine($"IP-Adresse: {arguments.Interface} " + (arguments.Get<bool>("tcp") ? "[TCP]" : "[UDP]") + (arguments.IsRouting ? " (Multicast)" : ""));
         Console.WriteLine($"IP-Port:    {arguments.Get<int>("port")}");
         Console.WriteLine($"PA:         {arguments.PhysicalAddress}");
         Console.WriteLine();
@@ -108,7 +116,12 @@ class Program
             if(arguments.IsRouting)
                 conn = KnxFactory.CreateRouting(UnicastAddress.FromString(arguments.Get<string>("gs")), arguments.Interface, arguments.Get<int>("port"));
             else
-                conn = KnxFactory.CreateTunnelingUdp(arguments.Interface, arguments.Get<int>("port"));
+            {
+                if(arguments.Get<bool>("tcp"))
+                    conn = KnxFactory.CreateTunnelingTcp(arguments.Interface, arguments.Get<int>("port"));
+                else
+                    conn = KnxFactory.CreateTunnelingUdp(arguments.Interface, arguments.Get<int>("port"));
+            }
 
             try
             {
@@ -151,14 +164,15 @@ class Program
             if(device.MaxFrameLength < useMaxAPDU)
                 useMaxAPDU = device.MaxFrameLength;
             device.SetMaxFrameLength(useMaxAPDU);
-            Console.WriteLine($"Info:  Gerät MaxAPDU: {device.MaxFrameLength}");
+            Console.WriteLine($"Info:  Package:          {arguments.Get<int>("pkg")}");
+            Console.WriteLine($"Info:  Gerät MaxAPDU:    {device.MaxFrameLength}");
             Console.WriteLine($"Info:  Verwende MaxAPDU: {useMaxAPDU}");
-            if(arguments.Get<int>("pkg") > (useMaxAPDU - 3)) {
+            if(arguments.Get<int>("pkg") > (useMaxAPDU)) {
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.WriteLine("WARN:  Package ist größer als MaxAPDU");
-                Console.WriteLine($"WARN:  Package wird geändert auf {useMaxAPDU-3}");
+                Console.WriteLine($"WARN:  Package wird geändert auf {useMaxAPDU}");
                 Console.ResetColor();
-                arguments.Set("pkg", useMaxAPDU-3);
+                arguments.Set("pkg", useMaxAPDU);
             }
             Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
             // Set the MaxAPDU that we calculated

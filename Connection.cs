@@ -9,6 +9,7 @@ public class Connection
     public IPEndPoint IPAddress { get; set; }
     public UnicastAddress PhysicalAddress { get; set; } = UnicastAddress.FromString("0.0.0");
     public int Version { get; set; } = 1;
+    public bool IsTCP { get; set; } = false;
 
     public Connection(IPEndPoint ip)
     {

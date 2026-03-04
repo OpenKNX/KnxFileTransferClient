@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\Kaenx-Konnect\Kaenx.Konnect\Kaenx.Konnect.csproj" />
+    <ProjectReference Include="..\Kaenx-Konnect\Kaenx.Konnect.csproj" />
     <ProjectReference Include="..\KnxFileTransferClient.Lib\KnxFileTransferClient.Lib.csproj" />
   </ItemGroup>
 
@@ -13,7 +13,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     
-    <AssemblyVersion>0.2.9.0</AssemblyVersion>
+    <AssemblyVersion>0.2.9.1</AssemblyVersion>
   </PropertyGroup>
 
   <ItemGroup>

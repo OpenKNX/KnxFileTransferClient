@@ -157,7 +157,7 @@ class Program
             } catch(Exception ex) {
                 throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
             }
-            Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.PhysicalAddress} hergestellt");
             useMaxAPDU = 255;
             // TODO get real MaxFrameLength from connection
             // if(conn.MaxFrameLength < useMaxAPDU)
@@ -924,7 +924,7 @@ class Program
             if (remoteUseLegacyOverhead)
                 packageSize = length - 3;
 
-            Console.WriteLine($"packageSize: {packageSize} Bytes");
+            //Console.WriteLine($"packageSize: {packageSize} Bytes");
 
             CRCTool crc = new();
             crc.Init(CRCTool.CRCCode.CRC32);

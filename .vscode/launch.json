@@ -85,7 +85,29 @@
             "fwupdate", "../OAM-LogicModule/.pio/build/release_OKNXHW_REG2_PiPico_W/firmware.uf2", 
             "--verbose",
             "--no-input",
-            "--pkg 52"
+            "--pkg", "52"
+          ],
+          "cwd": "${workspaceFolder}",
+          // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+          "console": "integratedTerminal",
+          "stopAtEntry": false
+        },
+        {
+          // Use IntelliSense to find out which attributes exist for C# debugging
+          // Use hover for the description of the existing attributes
+          // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
+          "name": "Test fwupdate RaumController Sensormodul",
+          "type": "coreclr",
+          "request": "launch",
+          "preLaunchTask": "build",
+          // If you have changed target frameworks, make sure to update the program path.
+          "program": "${workspaceFolder}/bin/Debug/net9.0/KnxFileTransferClient.dll",
+          "args": [
+            "fwupdate", "O:/Firmware/RaumController-Release-5.3.6/Firmware/SmartMF-Sensormodul-RP2040/firmware-SmartMF-Sensormodul-RP2040.uf2", 
+            "--verbose",
+            "--delay", "50",
+            "--pkg", "15",
+            "--connect", "Search"
           ],
           "cwd": "${workspaceFolder}",
           // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console

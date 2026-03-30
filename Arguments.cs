@@ -26,7 +26,8 @@ internal class Arguments{
         new("interactive", "Alle Argumente müssen vom Benutzer eingegeben werden", Argument.ArgumentType.Bool, false),
         new("no-resume", "Vorhandene Dateien werden immer komplett neu übertragen", Argument.ArgumentType.Bool, false),
         new("device-timeout", "Timeout in dem das Gerät eine Antwort schicken muss", Argument.ArgumentType.Int, 4000),
-        new("tcp", "Verwende TCP als Transportprotokoll", Argument.ArgumentType.Bool, false)
+        new("tcp", "Verwende TCP als Transportprotokoll", Argument.ArgumentType.Bool, false),
+        new("force-apdu", "Erzwinge die APDU", Argument.ArgumentType.Int, 55)
     };
 
     public UnicastAddress? PhysicalAddress { get; private set; } = null;
@@ -149,7 +150,7 @@ internal class Arguments{
         }
     }
 
-    private async Task<bool> SearchGateways(bool isAuto = false)
+    public async Task<bool> SearchGateways(bool isAuto = false, bool justSearch = false)
     {
         List<Connection> gateways = new();
         HashSet<string> uniquePhysicalAddresses = new HashSet<string>();
@@ -183,7 +184,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling) > 0)
                     {
                         int tunnelingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling);
-                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        if (!justSearch) Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             FriendlyName = deviceInfo.FriendlyName,
@@ -195,7 +196,7 @@ internal class Arguments{
 
                         if(tunnelingVersion >= 2)
                         {
-                            Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [TCP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                            if (!justSearch) Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [TCP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                             Connection tcpConn = new(hpai.Endpoint)
                             {
                                 IsTCP = true,
@@ -211,7 +212,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing) > 0)
                     {
                         int routingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing);
-                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        if (!justSearch) Console.WriteLine($"{counter,2} Routing   v{routingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             IsRouting = true,
@@ -220,6 +221,7 @@ internal class Arguments{
                             Version = routingVersion
                         };
                         gateways.Add(conn);
+                        Program.AddRouterLookup(deviceInfo.UnicastAddress.ToString());
                         counter++;
                     }
                 }
@@ -232,6 +234,8 @@ internal class Arguments{
         await Task.Delay(500);
         _conn.Dispose();
 
+        if (justSearch) return true;
+        
         Console.WriteLine($"Es wurden {gateways.Count} Gateways gefunden");
         if(gateways.Count == 0)
             return false;
@@ -267,12 +271,6 @@ internal class Arguments{
                     selected = 0;
             } while(selected < 1 || selected > gateways.Count);
             Connection conn = gateways[selected-1];
-            if(!conn.PhysicalAddress.ToString().StartsWith(phaddr))
-            {
-                Console.ForegroundColor = ConsoleColor.Yellow;
-                Console.WriteLine("Die Verbindung funktioniert möglicherweise nicht, da die Linien unterschiedlich sind.");
-                Console.ResetColor();
-            }
             Set("gw", conn.IPAddress.Address.ToString());
             Set("ga", conn.PhysicalAddress.ToString());
             Set("port", conn.IPAddress.Port.ToString());

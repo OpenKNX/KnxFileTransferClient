@@ -10,6 +10,8 @@ using System.Net.NetworkInformation;
 using System.IO.Hashing;
 using Kaenx.Konnect.Connections;
 using Kaenx.Konnect.Exceptions;
+using Kaenx.Konnect.EMI.DataMessages;
+using Kaenx.Konnect.Classes;
 
 namespace KnxFileTransferClient;
 
@@ -42,6 +44,19 @@ class Program
     private static bool remoteCanUseResume = false;
     private static bool remoteResumeTimeout = false;
     private static bool remoteUseLegacyOverhead = false;
+    private static readonly HashSet<string> routerPhysicalAddress = [];
+    private static bool routerLookupInitialized = false;
+
+    public static void AddRouterLookup(string physicalAddress)
+    {
+        routerPhysicalAddress.Add(physicalAddress);
+        routerLookupInitialized = true;
+    }
+
+    public static void InitRouterLookup()
+    {
+        routerLookupInitialized = true;
+    }
 
     static async Task<int> Main(string[] args)
     {
@@ -149,33 +164,54 @@ class Program
             if(arguments.PhysicalAddress == null)
                 throw new Exception("Keine PA angegeben");
 
-            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
-            try {
-                await device.ConnectIndividual();
-                if(arguments.GetWasSet("device-timeout"))
-                    device.SetTimeout(arguments.Get<int>("device-timeout"));
-            } catch(Exception ex) {
-                throw new Exception($"Das Zielgerät {arguments.PhysicalAddress} ist nicht erreichbar.", ex);
-            }
-            Console.WriteLine($"Info:  Verbindung zum KNX-Gerät {arguments.Get<string>("pa")} hergestellt");
+            // APDU calculation
             useMaxAPDU = 255;
-            // TODO get real MaxFrameLength from connection
-            // if(conn.MaxFrameLength < useMaxAPDU)
-            //     useMaxAPDU = conn.MaxFrameLength;
-            if(device.MaxFrameLength < useMaxAPDU)
-                useMaxAPDU = device.MaxFrameLength;
-            device.SetMaxFrameLength(useMaxAPDU);
-            Console.WriteLine($"Info:  Package:          {arguments.Get<int>("pkg")}");
-            Console.WriteLine($"Info:  Gerät MaxAPDU:    {device.MaxFrameLength}");
-            Console.WriteLine($"Info:  Verwende MaxAPDU: {useMaxAPDU}");
-            if(arguments.Get<int>("pkg") > (useMaxAPDU)) {
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine("WARN:  Package ist größer als MaxAPDU");
-                Console.WriteLine($"WARN:  Package wird geändert auf {useMaxAPDU}");
-                Console.ResetColor();
-                arguments.Set("pkg", useMaxAPDU);
+            int timeout = 0;
+            if(arguments.GetWasSet("device-timeout"))
+                timeout = arguments.Get<int>("device-timeout");
+
+            if (arguments.GetWasSet("force-apdu"))
+            {
+                useMaxAPDU = arguments.Get<int>("force-apdu");
             }
-            Console.WriteLine($"Info:  Verwende Package: {arguments.Get<int>("pkg")}");
+            else
+            {
+                UnicastAddress physicalAddressTarget = arguments.PhysicalAddress;
+                UnicastAddress? physicalAddressTunnel = conn.GetLocalAddress();
+                string gatewayAddress = arguments.Get<string>("ga");
+                string[] gatewayParts = gatewayAddress.Split(".");
+                UnicastAddress physicalAddressGateway = new(byte.Parse(gatewayParts[0]), byte.Parse(gatewayParts[1]), byte.Parse(gatewayParts[2]));
+                // calculate affected topology levels
+                if (!routerLookupInitialized) await arguments.SearchGateways(justSearch:true);
+                HashSet<UnicastAddress> addressesToCheck = [];
+                CalculateTopology(physicalAddressTarget, physicalAddressGateway, addressesToCheck);
+                Console.WriteLine($"Info:  Ermittle Route zum Ziel...");
+                foreach (UnicastAddress pa in addressesToCheck)
+                {
+                    device = await ConnectDevice(pa, timeout, conn);
+                    Console.WriteLine($"Info:      KNX-Gerät {pa} gefunden mit APDU = {device.MaxFrameLength}");
+                    if(device.MaxFrameLength < useMaxAPDU)
+                        useMaxAPDU = device.MaxFrameLength;
+                    await device.Disconnect();
+                }
+            }
+            device = await ConnectDevice(arguments.PhysicalAddress, timeout, conn);
+            Console.WriteLine($"Info:  Verbindung zum Ziel-Gerät {arguments.PhysicalAddress} hergestellt");
+            Console.WriteLine($"Info:  Gefundene MaxAPDU:   {useMaxAPDU}");
+            if (arguments.GetWasSet("pkg"))
+            {
+                if(arguments.Get<int>("pkg") > (useMaxAPDU)) {
+                    Console.WriteLine($"Info:  Vorgegebene Package: {arguments.Get<int>("pkg")}");
+                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    Console.WriteLine("WARN:  Package ist größer als MaxAPDU");
+                    Console.WriteLine($"WARN:  Package wird geändert auf {useMaxAPDU}");
+                    Console.ResetColor();
+                    arguments.Set("pkg", useMaxAPDU);
+                }
+            }
+            else
+                arguments.Set("pkg", useMaxAPDU);
+            Console.WriteLine($"Info:  Verwende Package:    {arguments.Get<int>("pkg")}");
             // Set the MaxAPDU that we calculated
             device.MaxFrameLength = useMaxAPDU;
 
@@ -304,6 +340,51 @@ class Program
 
         await Finish();
         return code;
+    }
+
+    private static async Task<BusDevice> ConnectDevice(UnicastAddress pa, int timeout, IpKnxConnection conn)
+    {
+        device = new BusDevice(pa, conn);
+        try
+        {
+            await device.ConnectIndividual();
+            if (timeout > 0)
+                device.SetTimeout(timeout);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Das KNX-Gerät {pa} ist nicht erreichbar.", ex);
+        }
+        return device;
+    }
+
+    private static void CalculateTopology(UnicastAddress physicalAddressSource, UnicastAddress physicalAddressTarget, HashSet<UnicastAddress> addressesToCheck)
+    {
+            // calculate affected topology levels
+        int topologyLevels = 0;
+        if (physicalAddressTarget.Area != physicalAddressSource.Area) topologyLevels = 2;
+        if (physicalAddressTarget.Area == physicalAddressSource.Area && physicalAddressTarget.Line != physicalAddressSource.Line) topologyLevels = 1;
+        CalculateTopology(physicalAddressSource, topologyLevels, addressesToCheck);    
+        CalculateTopology(physicalAddressTarget, topologyLevels, addressesToCheck);
+    }
+
+    // recursive (but just 2 Levels)
+    private static void CalculateTopology(UnicastAddress physicalAddress, int topologyLevels, HashSet<UnicastAddress> addressesToCheck)
+    {
+        addressesToCheck.Add(physicalAddress);
+        if (routerPhysicalAddress.Contains(physicalAddress.ToString())) return;
+        if (topologyLevels > 0 && physicalAddress.DeviceAddress > 0 && physicalAddress.Line > 0)
+        {
+            physicalAddress = new(physicalAddress.Area, physicalAddress.Line, 0);            
+            if (!addressesToCheck.Contains(physicalAddress))
+                CalculateTopology(physicalAddress, topologyLevels, addressesToCheck);
+        } 
+        else if (topologyLevels > 1 && physicalAddress.Line > 0)
+        {
+            physicalAddress = new(physicalAddress.Area, 0, 0);            
+            if (!addressesToCheck.Contains(physicalAddress))
+                CalculateTopology(physicalAddress, topologyLevels, addressesToCheck);
+        }
     }
 
     private static async Task Finish()
@@ -808,7 +889,7 @@ class Program
                 return;
             }
 
-            Console.WriteLine("Info:  Gerät wird neu gestartet                                ");
+            Console.WriteLine("Info:  Gerät wird neu gestartet und die Firmware akualisiert...          ");
 
             try
             {
@@ -923,8 +1004,6 @@ class Program
             int packageSize = length - 6;
             if (remoteUseLegacyOverhead)
                 packageSize = length - 3;
-
-            Console.WriteLine($"packageSize: {packageSize} Bytes");
 
             CRCTool crc = new();
             crc.Init(CRCTool.CRCCode.CRC32);

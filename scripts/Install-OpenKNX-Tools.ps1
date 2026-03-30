@@ -18,7 +18,7 @@
 # Set values for the installation or uninstallation process
 $Verbose    = $false  # Show verbose messages, if any errors occur during the installation. So we can see what went wrong
 $Uninstall  = $false  # Uninstall the application
-$WaitOnEnd  = $false  # Wait for the user to press a key before exiting, so they can read the messages
+$WaitOnEnd  = $true  # Wait for the user to press a key before exiting, so they can read the messages
 $AskUser    = $true   # Ask the user if they want to install / remove the application
 
 # Check the operating system

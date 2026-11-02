@@ -10,6 +10,8 @@ It can also list all content of a directory or create/delete one.
 
 
 ## How to use it
+For normal enduser please see [here](https://openknx.atlassian.net/wiki/spaces/OpenKNX/pages/459150).  
+  
 First make sure you installed the latest version under the [Releases](https://github.com/OpenKNX/KnxFileTransferClient/releases/latest).  
 To open the KnxFileTransfer install the tool just open a PowerShell window and enter:
 ```

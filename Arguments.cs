@@ -183,7 +183,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling) > 0)
                     {
                         int tunnelingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Tunneling);
-                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress.ToExactString(),-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             FriendlyName = deviceInfo.FriendlyName,
@@ -195,7 +195,7 @@ internal class Arguments{
 
                         if(tunnelingVersion >= 2)
                         {
-                            Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [TCP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                            Console.WriteLine($"{counter,2} Tunneling v{tunnelingVersion} [TCP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress.ToExactString(),-9}) [{deviceInfo.FriendlyName}]");
                             Connection tcpConn = new(hpai.Endpoint)
                             {
                                 IsTCP = true,
@@ -211,7 +211,7 @@ internal class Arguments{
                     if (svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing) > 0)
                     {
                         int routingVersion = svcFamilies.GetServiceFamilyVersion(Kaenx.Konnect.Enums.ServiceFamilies.Routing);
-                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress,-9}) [{deviceInfo.FriendlyName}]");
+                        Console.WriteLine($"{counter,2} Routing   v{routingVersion} [UDP] -> {hpai.Endpoint,-20} ({deviceInfo.UnicastAddress.ToExactString(),-9}) [{deviceInfo.FriendlyName}]");
                         Connection conn = new(hpai.Endpoint)
                         {
                             IsRouting = true,

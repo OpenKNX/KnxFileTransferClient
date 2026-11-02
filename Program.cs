@@ -45,6 +45,8 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
+        Trace.Listeners.Add(new TextWriterTraceListener(Console.Error));
+
         AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
         {
             Console.WriteLine("ProcessExit – Verbindung wird geschlossen...");

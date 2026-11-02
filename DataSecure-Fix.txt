@@ -1,0 +1,63 @@
+DataSecure-Absturz: lokale Testversion auf Basis von KnxFileTransferClient 0.2.9
+Stand: 02.11.2026
+
+Ergebnis
+Der gemeldete Absturz wurde mit einem lokalen UDP-Gateway exakt reproduziert.
+Nach der Korrektur wird die nicht implementierte DataSecure-Nachricht gezielt
+abgefangen und als Warnung auf stderr ausgegeben. Tunnelheader und Nachrichtencode
+bleiben erhalten: TunnelingProtocol kann das Paket weiterhin bestaetigen (ACK).
+Der verschluesselte Inhalt wird nicht an den FileTransferClient weitergeleitet.
+Andere nicht unterstuetzte APCI-Typen und Parserfehler bleiben Fehler.
+Dies implementiert keine KNX-Data-Secure-Entschluesselung.
+
+Ausfuehrbare Testversion
+C:\WS_Privat\KnxFileTransferClient\release\DataSecureFix-win-x64\KnxFileTransferClient.exe
+Den gesamten Ordner zusammenlassen: Die Laufzeit und Bibliotheken sind enthalten.
+Die bisher verwendeten Kommandozeilenargumente koennen uebernommen werden.
+Beispiel fuer die Warnung:
+Ignoring unsupported DataSecure telegram (channel 21, sequence 49).
+
+Tests wiederholen (PowerShell)
+& C:\WS_Privat\KnxFileTransferClient\Test-DataSecure.ps1
+
+Geprueft
+- Vorher: Parser-Test scheitert mit "No IDataMessage found for ApciType: DataSecure".
+- Vorher: UDP-Test beendet den Prozess mit dem urspruenglichen Stacktrace.
+- Nachher: 8 Parserfaelle mit optionaler cEMI-Zusatzinformation, nummerierten und
+  unnummerierten Telegrammen sowie L_Data_ind und L_Data_con bestehen.
+- Andere APCI-Typen (0x3fe) und zu kurze Header werden nicht verschluckt.
+- UDP: 1.000 abwechselnde synthetische Secure-/GroupValueWrite-Telegramme auf
+  127.0.0.1. Alle 1.000 ACKs mit richtigem Kanal und Sequenzzaehler erhalten,
+  500 normale Inhalte weitergegeben, genau 500 Secure-Warnungen ausgegeben.
+  Der Test enthaelt Sequenzzaehler-Ueberlaeufe und Secure-Bestaetigungen.
+- Release-Build und eigenstaendiges win-x64-Publish erfolgreich.
+- Die veroeffentlichte EXE startet und meldet Clientversion 0.2.9.
+- Zusaetzliche Codepruefung ohne wichtige Befunde.
+
+Testgrenzen
+Kein echtes KNX-Gateway und kein Geraet aktualisiert. Der UDP-Test prueft den
+realen Empfangspfad und ACKs ohne Verbindungsaufbau, keine vollstaendige
+Dateiuebertragung und keinen Keepalive. Die Secure-Nutzdaten sind synthetisch.
+Im unveraenderten Bibliothekscode bestehen 26 Compilerwarnungen, insbesondere
+zu Nullable und async; der Ausgangsbuild war ebenfalls erfolgreich.
+
+Quellstaende und lokale Aenderungen
+Client: v0.2.9 / c8de96c6006190ce575d87cb587c61af4641aa30
+Kaenx-Konnect: f5e0727c4c88abf7f78a3691675a6f1e9aa1dfca
+KnxFileTransferClient.Lib: 808cce7 (unveraendert)
+Die Bibliotheksstaende entsprechen den letzten master-Commits vor dem Client-
+Release; die alte dependencies.txt verweist noch auf inkompatible 2023er-Staende.
+Eine bitgenaue Uebereinstimmung mit den offiziellen Release-Binaerdateien wurde
+nicht nachgewiesen.
+
+Alle drei Projekte liegen unter C:\WS_Privat, Zweig codex/datasecure-warning.
+Secure-Korrektur lokal committed auf codex/datasecure-warning, nicht hochgeladen.
+Kaenx-Konnect Secure-Commit: 888747351e5013a00f8fc672ed00ae7548bd7f74
+Kaenx-Konnect: typisierte UnsupportedApciException, gezielter Catch im
+TunnelingRequest, Regressionstest ohne weitere Testpakete.
+Client: Warnungsausgabe ueber TextWriterTraceListener(Console.Error), Testskript.
+.NET SDK 9.0.320 liegt lokal unter C:\WS_Privat\.dotnet.
+
+Neu bauen (PowerShell)
+& C:\WS_Privat\.dotnet\dotnet.exe publish C:\WS_Privat\KnxFileTransferClient\KnxFileTransferClient.csproj -c Release -r win-x64 --self-contained true -o C:\WS_Privat\KnxFileTransferClient\release\DataSecureFix-win-x64
+

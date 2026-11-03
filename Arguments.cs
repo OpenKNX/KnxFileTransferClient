@@ -12,7 +12,7 @@ namespace KnxFileTransferClient;
 
 internal class Arguments{
     private static List<Argument> arguments = new List<Argument> {
-        new("delay", "Verzögerung", Argument.ArgumentType.Int, 0),
+        new("delay", "Pause nach bestaetigtem Upload-Datenblock in ms", Argument.ArgumentType.Int, 60),
         new("pkg", "Telegrammgröße", Argument.ArgumentType.Int, 128),
         new("force", "Erzwingen", Argument.ArgumentType.Bool, false),
         new("connect", "Verbindung", Argument.ArgumentType.Enum, Argument.ConnectionType.search),

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text;
 using System;
 using System.Management.Automation;
@@ -181,7 +181,9 @@ class Program
             // Set the MaxAPDU that we calculated
             device.MaxFrameLength = useMaxAPDU;
 
-            FileTransferClient client = new FileTransferClient(device);
+            int uploadDelay = arguments.Get<int>("delay");
+            FileTransferClient client = new FileTransferClient(device, uploadDelay);
+            Console.WriteLine($"Info:  Paketabstand nach bestaetigtem Datenblock: {uploadDelay} ms");
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
             client.PrintInfo += PrintInfo;

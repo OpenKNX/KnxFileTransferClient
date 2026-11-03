@@ -37,6 +37,7 @@ class Program
     }
     private static Kaenx.Konnect.Connections.IpKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
+    private static FileTransferConnection? transferConnection = null;
     private static bool verbose = false;
     private static int useMaxAPDU = 15;
     private static bool remoteCanUseResume = false;
@@ -151,7 +152,8 @@ class Program
             if(arguments.PhysicalAddress == null)
                 throw new Exception("Keine PA angegeben");
 
-            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
+            transferConnection = new FileTransferConnection(conn, arguments.PhysicalAddress);
+            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, transferConnection);
             try {
                 await device.ConnectIndividual();
                 if(arguments.GetWasSet("device-timeout"))
@@ -317,6 +319,8 @@ class Program
             await device.Disconnect();
             device = null;
         }
+        transferConnection?.Dispose();
+        transferConnection = null;
         if (conn != null)
         {
             await conn.Disconnect();

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Text;
 using System;
 using System.Management.Automation;
@@ -37,6 +37,7 @@ class Program
     }
     private static Kaenx.Konnect.Connections.IpKnxConnection? conn = null;
     private static Kaenx.Konnect.Classes.BusDevice? device = null;
+    private static FileTransferConnection? transferConnection = null;
     private static bool verbose = false;
     private static int useMaxAPDU = 15;
     private static bool remoteCanUseResume = false;
@@ -45,6 +46,8 @@ class Program
 
     static async Task<int> Main(string[] args)
     {
+        Trace.Listeners.Add(new TextWriterTraceListener(Console.Error));
+
         AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
         {
             Console.WriteLine("ProcessExit – Verbindung wird geschlossen...");
@@ -149,7 +152,8 @@ class Program
             if(arguments.PhysicalAddress == null)
                 throw new Exception("Keine PA angegeben");
 
-            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, conn);
+            transferConnection = new FileTransferConnection(conn, arguments.PhysicalAddress);
+            device = new Kaenx.Konnect.Classes.BusDevice(arguments.PhysicalAddress, transferConnection);
             try {
                 await device.ConnectIndividual();
                 if(arguments.GetWasSet("device-timeout"))
@@ -179,7 +183,9 @@ class Program
             // Set the MaxAPDU that we calculated
             device.MaxFrameLength = useMaxAPDU;
 
-            FileTransferClient client = new FileTransferClient(device);
+            int uploadDelay = arguments.Get<int>("delay");
+            FileTransferClient client = new FileTransferClient(device, uploadDelay);
+            Console.WriteLine($"Info:  Paketabstand nach bestaetigtem Datenblock: {uploadDelay} ms");
             client.ProcessChanged += ProcessChanged;
             client.OnError += OnError;
             client.PrintInfo += PrintInfo;
@@ -313,6 +319,8 @@ class Program
             await device.Disconnect();
             device = null;
         }
+        transferConnection?.Dispose();
+        transferConnection = null;
         if (conn != null)
         {
             await conn.Disconnect();

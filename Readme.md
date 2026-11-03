@@ -79,7 +79,7 @@ Optional Arguments:
 |Argument|Description|Default|
 |---|---|---|
 |pkg|Size of Telegrams to use.|128|
-|delay|Delay in ms between Telegrams to reduce busload|0|
+|delay|Pause in ms after each successfully validated upload data block; 0 disables the pause|60|
 |connect|Connection Type: Tunneling, Routing, Auto, Search|Search|
 |verbose|Print the Stacktrace of Exceptions|-Boolean-|
 |pa|Physikal Address of Target|1.1.255|
